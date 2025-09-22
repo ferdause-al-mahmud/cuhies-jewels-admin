@@ -1,0 +1,190 @@
+// app/api/orders/[orderID]/route.js - Updated to include payment relationship
+import { connectDB } from "@/app/lib/connectDB";
+import { ObjectId } from "mongodb";
+import { NextResponse } from "next/server";
+
+export const GET = async (req, { params }) => {
+    const db = await connectDB();
+    const ordersCollection = db.collection('orders');
+    const paymentsCollection = db.collection('payments');
+
+    try {
+        const { orderID } = params;
+
+        // Get order details
+        const order = await ordersCollection.findOne({ orderID: parseInt(orderID) });
+
+        if (!order) {
+            return NextResponse.json(
+                { error: `Order with ID ${orderID} not found` },
+                { status: 404 }
+            );
+        }
+
+        // Get related payments
+        const payments = await paymentsCollection.find({
+            orderID: parseInt(orderID)
+        }).toArray();
+
+        return NextResponse.json({
+            ...order,
+            payments: payments
+        }, { status: 200 });
+
+    } catch (error) {
+        console.error("Error fetching order:", error);
+        return NextResponse.json(
+            { error: "Failed to fetch order", details: error.message },
+            { status: 500 }
+        );
+    }
+};
+
+export const PUT = async (req, { params }) => {
+    const db = await connectDB();
+    const ordersCollection = db.collection('orders');
+    const orderID = parseInt(params.orderID);
+    const { status } = await req.json();
+
+    try {
+        if (status !== 'delivered') {
+            const result = await ordersCollection.updateOne(
+                { orderID },
+                {
+                    $set: {
+                        status,
+                        updatedAt: new Date()
+                    }
+                }
+            );
+
+            if (result.modifiedCount === 0) {
+                return NextResponse.json({ error: "Order not found" }, { status: 404 });
+            }
+
+            return NextResponse.json({ message: "Order updated successfully" }, { status: 200 });
+        }
+
+        // Handle delivered status with revenue calculation
+        const order = await ordersCollection.findOne({ orderID });
+
+        if (!order) {
+            return NextResponse.json({ error: "Order not found" }, { status: 404 });
+        }
+
+        let updateData = {
+            status: 'delivered',
+            deliveredAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        // If there's remaining amount, mark it as collected
+        if (order.remainingAmount > 0) {
+            updateData.paymentStatus = "paid";
+            updateData.paidAmount = order.total;
+            updateData.remainingAmount = 0;
+        }
+
+        if (!order.consignment_id) {
+            const result = await ordersCollection.updateOne(
+                { orderID },
+                { $set: updateData }
+            );
+
+            if (result.modifiedCount === 0) {
+                return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
+            }
+
+            return NextResponse.json({ message: "Order delivered successfully" }, { status: 200 });
+        }
+
+        // Fetch product revenue if consignment_id exists
+        const apiResponse = await fetch(`${process.env.API_URL}/api/product-revenue`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cID: order.consignment_id })
+        });
+
+        if (apiResponse.ok) {
+            const { data } = await apiResponse.json();
+            if (data && typeof data.order_amount === 'number' && typeof data.total_fee === 'number') {
+                updateData.total_revenue = data.order_amount - data.total_fee;
+            }
+        }
+
+        const result = await ordersCollection.updateOne(
+            { orderID },
+            { $set: updateData }
+        );
+
+        if (result.modifiedCount === 0) {
+            return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
+        }
+
+        return NextResponse.json({ message: "Order delivered and updated successfully" }, { status: 200 });
+
+    } catch (error) {
+        console.error("Error updating order:", error);
+        return NextResponse.json(
+            { error: "Failed to update order", details: error.message },
+            { status: 500 }
+        );
+    }
+};
+
+export async function DELETE(request, { params }) {
+    const db = await connectDB();
+    const ordersCollection = db.collection('orders');
+    const paymentsCollection = db.collection('payments');
+
+    try {
+        const { orderID } = params;
+        const order = await ordersCollection.findOne({ orderID: parseInt(orderID) });
+
+        if (!order) {
+            return NextResponse.json(
+                { message: "Order not found" },
+                { status: 404 }
+            );
+        }
+
+        // Delete related payments
+        await paymentsCollection.deleteMany({ orderID: parseInt(orderID) });
+
+        // Delete the order
+        const result = await ordersCollection.deleteOne({ orderID: parseInt(orderID) });
+
+        if (result.deletedCount === 0) {
+            return NextResponse.json(
+                { message: "Failed to delete order" },
+                { status: 500 }
+            );
+        }
+
+        // Restore inventory if order was not returned
+        if (order.status !== "returned") {
+            const quantityUpdates = order.cart?.map((item) => ({
+                productId: item.id,
+                size: item.selectedSize,
+                quantity: Number.parseInt(item.quantity, 10),
+            }));
+
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/update-quantity`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ updates: quantityUpdates }),
+            });
+        }
+
+        return NextResponse.json(
+            { message: "Order and related payments deleted successfully" },
+            { status: 200 }
+        );
+    } catch (error) {
+        console.error("Error deleting order:", error);
+        return NextResponse.json(
+            { message: "Error deleting order" },
+            { status: 500 }
+        );
+    }
+}

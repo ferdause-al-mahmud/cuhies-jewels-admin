@@ -1,0 +1,10 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://http://cuhiesjewels.com.bd
+
+# Sitemaps
+Sitemap: https://http://cuhiesjewels.com.bd/sitemap.xml
+Sitemap: https://http://cuhiesjewels.com.bd/api/sitemap.xml
