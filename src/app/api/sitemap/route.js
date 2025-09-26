@@ -21,7 +21,7 @@ export async function GET() {
         { title: "Saree", path: "/collections/saree", priority: 0.7 },
         { title: "Kurti", path: "/collections/kurti", priority: 0.7 },
         { title: "Gown", path: "/collections/gown", priority: 0.7 },
-        { title: "Cordset", path: "/collections/cordset", priority: 0.7 },
+        { title: "Co-ords Set", path: "/collections/cordset", priority: 0.7 },
         { title: "Kaftan", path: "/collections/kaftan", priority: 0.7 },
         { title: "One Piece", path: "/collections/one-piece", priority: 0.7 },
         { title: "Two Piece", path: "/collections/two-piece", priority: 0.7 },

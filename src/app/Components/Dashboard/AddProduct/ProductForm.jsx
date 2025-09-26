@@ -72,7 +72,7 @@ const clothingCategories = [
   { value: "Kurti", title: "Kurti" },
   { value: "Gown", title: "Gown" },
   { value: "Kaftan", title: "Kaftan" },
-  { value: "Cordset", title: "Cordset" },
+  { value: "Cordset", title: "Co-ords set" },
   { value: "Payjamas", title: "Payjamas" },
   { value: "Two-piece", title: "Two Piece" },
   { value: "Three-piece", title: "Three Piece" },
