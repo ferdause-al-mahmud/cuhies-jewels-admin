@@ -67,7 +67,7 @@ const ManualEntryTable = ({
     },
     cart: [],
     paymentOption: "bkash",
-    shippingOption: "insideDhaka",
+    advancePayment: 0,
     total: 0,
     shippingCost: 0,
     discount: 0,
@@ -576,7 +576,7 @@ const ManualEntryTable = ({
       },
       cart: [],
       paymentOption: "bkash",
-      shippingOption: "insideDhaka",
+      advancePayment: 0,
       total: 0,
       shippingCost: 0,
       discount: 0,
@@ -1321,17 +1321,44 @@ const ManualEntryTable = ({
                   <MenuItem value="insta">Instagram</MenuItem>
                 </TextField>
                 <TextField
-                  select
-                  label="Shipping Option"
+                  label="Advance"
+                  type="number"
                   fullWidth
-                  value={newOrderData.shippingOption}
-                  onChange={(e) => handleShippingOptionChange(e.target.value)}
+                  value={
+                    newOrderData.advancePayment === 0
+                      ? ""
+                      : newOrderData.advancePayment
+                  }
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+
+                    // If input is empty, just set "" (don't force 0)
+                    if (inputValue === "") {
+                      handleNewOrderFieldChange("advancePayment", "");
+                      handleNewOrderFieldChange(
+                        "total",
+                        newOrderData.cart.reduce(
+                          (sum, item) => sum + item.price * item.quantity,
+                          0
+                        ) + newOrderData.shippingCost
+                      );
+                      return;
+                    }
+
+                    // Otherwise, parse as number
+                    const advancePayment = Number.parseInt(inputValue, 10) || 0;
+                    const cartTotal = newOrderData.cart.reduce(
+                      (sum, item) => sum + item.price * item.quantity,
+                      0
+                    );
+                    const newTotal =
+                      cartTotal + newOrderData.shippingCost - advancePayment;
+
+                    handleNewOrderFieldChange("advancePayment", advancePayment);
+                    handleNewOrderFieldChange("total", newTotal);
+                  }}
                   margin="normal"
-                >
-                  <MenuItem value="insideDhaka">Inside Dhaka</MenuItem>
-                  <MenuItem value="dhakaSubCity">Dhaka Sub City</MenuItem>
-                  <MenuItem value="outsideDhaka">Outside Dhaka</MenuItem>
-                </TextField>
+                />
 
                 <TextField
                   select
@@ -1350,31 +1377,32 @@ const ManualEntryTable = ({
                   <MenuItem value="returned">Returned</MenuItem>
                   <MenuItem value="exchange">Exchange</MenuItem>
                 </TextField>
-                {/* <TextField
-                  label="Shipping Cost"
-                  type="number"
-                  fullWidth
-                  value={newOrderData.shippingCost}
-                  onChange={(e) => {
-                    const cost = Number.parseInt(e.target.value, 10) || 0;
-                    const cartTotal = newOrderData.cart.reduce(
-                      (sum, item) => sum + item.price * item.quantity,
-                      0
-                    );
-                    const newTotal = cartTotal + cost - newOrderData.discount;
 
-                    handleNewOrderFieldChange("shippingCost", cost);
-                    handleNewOrderFieldChange("total", newTotal);
-                  }}
-                  margin="normal"
-                /> */}
                 <TextField
                   label="Discount"
                   type="number"
                   fullWidth
-                  value={newOrderData.discount}
+                  value={
+                    newOrderData.discount === 0 ? "" : newOrderData.discount
+                  }
                   onChange={(e) => {
-                    const discount = Number.parseInt(e.target.value, 10) || 0;
+                    const inputValue = e.target.value;
+
+                    // If input is empty, clear discount but keep total intact
+                    if (inputValue === "") {
+                      handleNewOrderFieldChange("discount", "");
+                      handleNewOrderFieldChange(
+                        "total",
+                        newOrderData.cart.reduce(
+                          (sum, item) => sum + item.price * item.quantity,
+                          0
+                        ) + newOrderData.shippingCost
+                      );
+                      return;
+                    }
+
+                    // Otherwise, parse number and update
+                    const discount = Number.parseInt(inputValue, 10) || 0;
                     const cartTotal = newOrderData.cart.reduce(
                       (sum, item) => sum + item.price * item.quantity,
                       0
@@ -1387,6 +1415,7 @@ const ManualEntryTable = ({
                   }}
                   margin="normal"
                 />
+
                 <TextField
                   label="Total"
                   type="number"

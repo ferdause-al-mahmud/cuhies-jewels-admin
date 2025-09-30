@@ -32,15 +32,17 @@ import { MdDeleteForever } from "react-icons/md";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import SlipLogo from "../../../../assets/sliplogo.png";
 import axios from "axios";
 import EditOrderModal from "../../modals/EditOrderModal";
 import { getParsedAddress } from "@/app/utils/getParsedAddress";
 import SuccessRateModal from "../../modals/SuccessRateModal";
 import { FaFacebook, FaGlobe, FaInstagram, FaWhatsapp } from "react-icons/fa";
 import { copyOrderSlip } from "@/app/lib/copyOrderSlip";
-
-const OrdersTable = ({ orders, totalPages, currentPage }) => {
+import cjIconUrl from "../../../../assets/cj1.png";
+import qrImageUrl from "../../../../assets/cj2.png";
+import fragilesUrl from "../../../../assets/cj3.png";
+import logoUrl from "../../../../assets/cj4.png";
+const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
   const [orderStatuses, setOrderStatuses] = useState({});
   const cacheRef = useRef(new Map()); // id -> status
 
@@ -62,9 +64,7 @@ const OrdersTable = ({ orders, totalPages, currentPage }) => {
   const [updatedOrder, setUpdatedOrder] = useState({});
   const [disabledSave, setDisabledSave] = useState({});
   const [initialStatus, setInitialStatus] = useState({});
-  const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [productSearchQuery, setProductSearchQuery] = useState("");
-  const [filteredOrders, setFilteredOrders] = useState(orders);
   const router = useRouter();
   const statusFilter = searchParams.get("status") || "all";
   const [products, setProducts] = useState([]);
@@ -123,37 +123,46 @@ const OrdersTable = ({ orders, totalPages, currentPage }) => {
       const sectionPadding = 2; // Padding inside each section border
       const lineHeight = 4; // Reduced vertical spacing for text lines
 
-      // Helper to fetch images
-      const fetchImageAsBase64 = async (url) => {
+      // Helper to convert imported images to base64
+      const convertImageToBase64 = async (imageSrc) => {
         try {
-          const response = await fetch(url);
-          const blob = await response.blob();
-          return await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
+          // If it's already a string (URL), fetch it
+          if (typeof imageSrc === "string") {
+            const response = await fetch(imageSrc);
+            const blob = await response.blob();
+            return await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          }
+
+          // If it's an imported image object, use its src property
+          if (imageSrc && typeof imageSrc === "object" && imageSrc.src) {
+            const response = await fetch(imageSrc.src);
+            const blob = await response.blob();
+            return await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          }
+
+          return null;
         } catch (error) {
-          console.error(`Error fetching image from ${url}:`, error);
+          console.error("Error converting image:", error);
           return null;
         }
       };
 
-      // Load all images
-      const cjIconBase64 = await fetchImageAsBase64(
-        "https://res.cloudinary.com/dvktrl9as/image/upload/v1758046599/cj_hmk74j.png"
-      );
-      const qrImageBase64 = await fetchImageAsBase64(
-        "https://res.cloudinary.com/dvktrl9as/image/upload/v1758046733/frame_hqedoe.png"
-      );
-      const fragilesBase64 = await fetchImageAsBase64(
-        "https://res.cloudinary.com/dvktrl9as/image/upload/v1758046599/fragile_bm6nrk.png"
-      );
-      const logoBase64 = await fetchImageAsBase64(
-        "https://res.cloudinary.com/dvktrl9as/image/upload/v1757446925/sliplogo_pnyazk.png"
-      );
-
+      // Load all images using local imports
+      const cjIconBase64 = await convertImageToBase64(cjIconUrl);
+      const qrImageBase64 = await convertImageToBase64(qrImageUrl);
+      const fragilesBase64 = await convertImageToBase64(fragilesUrl);
+      const logoBase64 = await convertImageToBase64(logoUrl);
+      console.log(cjIconBase64);
       let currentY = margin; // Start drawing after the top margin
 
       // --- Draw Main Border ---
@@ -306,7 +315,177 @@ const OrdersTable = ({ orders, totalPages, currentPage }) => {
       console.log("Failed to generate invoice. Please try again.");
     }
   };
+  const handleDirectHTMLPrint = (order) => {
+    const printWindow = window.open("", "_blank");
 
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Invoice ${order.orderID}</title>
+      <style>
+        @page {
+  size: 75mm 100mm;
+  margin: 4px;  /* adds white border around page */
+}
+
+        
+        @media print {
+          body { margin: 0; padding: 0; }
+          .no-print { display: none; }
+        }
+        
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          width: 75mm;
+          height: 100mm;
+        }
+        
+.invoice-container {
+  width: 100%;
+  height: 100%;
+  border: 2px solid #000;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+        
+        .section {
+          border-bottom: 2px solid #000;
+          padding: 6px;
+        }
+        
+        .section:last-child {
+          border-bottom: none;
+          flex: 1;
+        }
+        
+        .logo-section {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          height: 25mm;
+          position: relative;
+        }
+        
+        .logo-section::after {
+          content: '';
+          position: absolute;
+          left: 50%;
+          top: 0;
+          bottom: 0;
+          width: 2px;
+          background: #000;
+        }
+        
+        .logo-section img {
+          width: 22mm;
+          height: 22mm;
+          object-fit: contain;
+        }
+        
+        .order-id {
+          text-align: center;
+          font-weight: bold;
+          font-size: 14px;
+          padding: 8px 0;
+        }
+        
+        .customer-info {
+          text-align: center;
+          padding: 8px 0;
+        }
+        
+        .customer-name {
+          font-weight: bold;
+          font-size: 16px;
+          margin-bottom: 8px;
+        }
+        
+        .customer-phone {
+          font-size: 16px;
+        }
+        
+        .fragile-section {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 15mm;
+        }
+        
+        .fragile-section img {
+          max-width: 95%;
+          max-height: 100%;
+          object-fit: contain;
+        }
+        
+        .bottom-logo {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 6px;
+        }
+        
+        .bottom-logo img {
+          max-width: 95%;
+          max-height: 100%;
+          object-fit: contain;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="invoice-container">
+        <!-- Logo Section -->
+        <div class="section logo-section">
+        <div>
+              <img src="${cjIconUrl.src || cjIconUrl}" alt="CJ Icon">
+        </div>
+        <div>
+               <img src="${qrImageUrl.src || qrImageUrl}" alt="Logo"></div>   
+        </div>
+        
+        <!-- Order ID Section -->
+        <div class="section order-id">
+          ORDER NO-${order.orderID || "101"}
+        </div>
+        
+        <!-- Customer Info Section -->
+        <div class="section customer-info">
+          <div class="customer-name">${
+            order.formData.name || "NAME NAME NAME"
+          }</div>
+          <div class="customer-phone">${
+            order.formData.phone || "01999999999"
+          }</div>
+        </div>
+        
+        <!-- Fragile Icons Section -->
+        <div class="section fragile-section">
+          <img src="${fragilesUrl.src || fragilesUrl}" alt="Fragile">
+        </div>
+        
+        <!-- Bottom Logo Section -->
+        <div class="section bottom-logo">
+          <img src="${logoUrl.src || logoUrl}" alt="Logo">
+        </div>
+      </div>
+      
+      <script>
+        // Auto-print when loaded
+        window.onload = () => {
+          setTimeout(() => window.print(), 500);
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
   // Fetch total counts from all-orders API
   const fetchTotalCounts = async () => {
     try {
@@ -375,21 +554,6 @@ const OrdersTable = ({ orders, totalPages, currentPage }) => {
     setInitialStatus(statusMap);
     setDisabledSave(disabledMap);
   }, [orders]);
-
-  // Filter orders based on search query when it changes
-  useEffect(() => {
-    if (orderSearchQuery) {
-      setFilteredOrders(
-        orders.filter((order) =>
-          order?.formData?.phone
-            ?.toLowerCase()
-            .includes(orderSearchQuery.toLowerCase())
-        )
-      );
-    } else {
-      setFilteredOrders(orders); // Reset to full list if no query
-    }
-  }, [orderSearchQuery, orders]);
 
   const handlePageChange = (event, newPage) => {
     setPage(newPage);
@@ -1444,7 +1608,13 @@ const OrdersTable = ({ orders, totalPages, currentPage }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredOrders?.length === 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" className="">
+                  <h1 className="py-20 text-4xl font-bold">Loading</h1>
+                </TableCell>
+              </TableRow>
+            ) : orders?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center" className="">
                   <h1 className="py-20 text-4xl font-bold">No orders found</h1>
@@ -1452,7 +1622,7 @@ const OrdersTable = ({ orders, totalPages, currentPage }) => {
               </TableRow>
             ) : (
               <>
-                {filteredOrders?.map((order) => (
+                {orders?.map((order) => (
                   <TableRow key={order._id}>
                     <TableCell>
                       <h1>
@@ -1609,9 +1779,7 @@ const OrdersTable = ({ orders, totalPages, currentPage }) => {
                           variant="contained"
                           color="primary"
                           className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-md transition-all duration-300 transform hover:scale-[1.02] hover:shadow-md active:scale-95 text-xs sm:text-sm"
-                          onClick={() =>
-                            handleDownloadWebInvoiceAlternative(order)
-                          }
+                          onClick={() => handleDirectHTMLPrint(order)}
                         >
                           Download CJ Invoice
                         </Button>

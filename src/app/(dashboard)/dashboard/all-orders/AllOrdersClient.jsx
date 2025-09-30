@@ -7,6 +7,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/app/firebase/firebase.config";
 
 const AllOrdersClient = ({ searchParams }) => {
+  const [loading, setLoading] = useState(true);
   const [ordersData, setOrdersData] = useState({
     orders: [],
     totalPages: 1,
@@ -37,6 +38,7 @@ const AllOrdersClient = ({ searchParams }) => {
       if (!res.ok) throw new Error("Failed to fetch orders");
 
       const data = await res.json();
+      setLoading(false);
       setOrdersData({
         orders: data.orders,
         totalPages: data.totalPages,
@@ -44,6 +46,7 @@ const AllOrdersClient = ({ searchParams }) => {
       });
     } catch (err) {
       console.error("Error fetching orders:", err);
+      setLoading(false);
     }
   };
 
@@ -53,6 +56,7 @@ const AllOrdersClient = ({ searchParams }) => {
 
   return (
     <OrdersTable
+      loading={loading}
       orders={ordersData.orders}
       totalPages={ordersData.totalPages}
       currentPage={ordersData.currentPage}

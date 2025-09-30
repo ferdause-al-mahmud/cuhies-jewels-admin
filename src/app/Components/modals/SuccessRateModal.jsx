@@ -5,7 +5,6 @@ const SuccessRateModal = ({ phoneNumber }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [rateData, setRateData] = useState(null);
   const [loading, setLoading] = useState(false);
-  console.log(rateData);
   const checkSuccessRate = async (phone) => {
     setLoading(true);
     try {
