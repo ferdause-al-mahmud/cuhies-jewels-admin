@@ -385,6 +385,8 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
           width: 22mm;
           height: 22mm;
           object-fit: contain;
+          margin-left: 20px;
+          margin-right: 20px;
         }
         
         .order-id {
