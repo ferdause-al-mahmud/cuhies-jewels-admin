@@ -1,6 +1,7 @@
 //api/orders/[orderID]/route.js
 
 import { connectDB } from "@/app/lib/connectDB";
+import { parse } from "date-fns";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 
@@ -34,32 +35,56 @@ export const GET = async (req, { params }) => {
 export const PUT = async (req, { params }) => {
     const db = await connectDB();
     const ordersCollection = db.collection('orders');
+    const productsCollection = db.collection('products');
     const orderID = parseInt(params.orderID);
     const { status } = await req.json();
 
     try {
-        // Case 1: Status is NOT 'delivered'
-        if (status !== 'delivered') {
+        // Fetch current order first
+        const order = await ordersCollection.findOne({ orderID });
+        if (!order) {
+            return NextResponse.json({ error: "Order not found" }, { status: 404 });
+        }
+
+        const prevStatus = order.status; // previous status
+        const sold_products = order.cart; // items with id + quantity
+
+        // Handle transition: delivered -> other (reduce quantities)
+        if (prevStatus === "delivered" && status !== "delivered") {
+            for (const item of sold_products) {
+                await productsCollection.updateOne(
+                    { id: item.id },
+                    { $inc: { sold_quantity: -parseInt(item.quantity) } } // decrement
+                );
+            }
+        }
+
+        // Handle transition: other -> delivered (increase quantities)
+        if (prevStatus !== "delivered" && status === "delivered") {
+            for (const item of sold_products) {
+                await productsCollection.updateOne(
+                    { id: item.id },
+                    { $inc: { sold_quantity: parseInt(item.quantity) } } // increment
+                );
+            }
+        }
+
+        // --- Now update the order status ---
+        // Case: Status is not delivered
+        if (status !== "delivered") {
             const result = await ordersCollection.updateOne(
                 { orderID },
                 { $set: { status } }
             );
 
             if (result.modifiedCount === 0) {
-                return NextResponse.json({ error: "Order not found" }, { status: 404 });
+                return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
             }
 
             return NextResponse.json({ message: "Order updated successfully" }, { status: 200 });
         }
 
-        // Case 2: Status is 'delivered'
-        const order = await ordersCollection.findOne({ orderID });
-
-        if (!order) {
-            return NextResponse.json({ error: "Order not found" }, { status: 404 });
-        }
-
-        // Sub-case A: No consignment_id, just update status
+        // Case: Status is delivered
         if (!order.consignment_id) {
             const result = await ordersCollection.updateOne(
                 { orderID },
@@ -70,10 +95,10 @@ export const PUT = async (req, { params }) => {
                 return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
             }
 
-            return NextResponse.json({ message: "Order status updated (no consignment ID)" }, { status: 200 });
+            return NextResponse.json({ message: "Order delivered & product sales updated" }, { status: 200 });
         }
 
-        // Sub-case B: consignment_id exists → Fetch product revenue
+        // Case: delivered + consignment_id → fetch revenue
         const apiResponse = await fetch(`${process.env.API_URL}/api/product-revenue`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -85,13 +110,11 @@ export const PUT = async (req, { params }) => {
         }
 
         const { data } = await apiResponse.json();
-
         if (!data || typeof data.order_amount !== 'number' || typeof data.total_fee !== 'number') {
             return NextResponse.json({ error: "Invalid data from product-revenue API" }, { status: 500 });
         }
 
         const total_revenue = data.order_amount - data.total_fee;
-
         const result = await ordersCollection.updateOne(
             { orderID },
             {
@@ -106,7 +129,7 @@ export const PUT = async (req, { params }) => {
             return NextResponse.json({ error: "Failed to update order with profit" }, { status: 500 });
         }
 
-        return NextResponse.json({ message: "Order updated with profit successfully" }, { status: 200 });
+        return NextResponse.json({ message: "Order delivered, sales updated & profit calculated" }, { status: 200 });
 
     } catch (error) {
         console.error("Error updating order:", error);
@@ -116,6 +139,7 @@ export const PUT = async (req, { params }) => {
         );
     }
 };
+
 
 export async function DELETE(request, { params }) {
     const db = await connectDB();
