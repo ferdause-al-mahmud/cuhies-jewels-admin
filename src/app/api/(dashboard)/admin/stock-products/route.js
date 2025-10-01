@@ -56,8 +56,11 @@ export const GET = async (req) => {
         }
 
         // Fetch all matching products
-        const allProducts = await productsCollection.find(query).toArray();
-
+        const allProducts = await productsCollection
+            .find(query)
+            .sort({ createdAt: -1 }) // ✅ if you store createdAt
+            // .sort({ _id: -1 })   // ✅ fallback if no createdAt, since ObjectId encodes time
+            .toArray();
         // 🧮 Add stock, sold, revenue, profit calculations
         const productsWithStats = allProducts.map((product) => {
             let totalStock = 0;
@@ -78,14 +81,13 @@ export const GET = async (req) => {
                 });
             }
 
-            const buyingPrice = product?.buyingPrice
-                ? product?.buyingPrice
-                : product?.offerPrice
-                    ? product?.offerPrice
-                    : product?.price;
+            // Calculate stats
+            const productRevenue = product?.buyingPrice
+                ? parseInt(product?.price) - parseInt(product?.buyingPrice)
+                : product?.offerPrice ? parseInt(product?.offerPrice) : product?.price;
 
             const soldQuantity = Number(product.sold_quantity || 0);
-            const revenue = soldQuantity * (Number(buyingPrice) || 0);
+            const revenue = soldQuantity * (Number(productRevenue) || 0);
             const grossProfit = revenue; // assuming no cost price yet
             const profitMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
 

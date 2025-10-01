@@ -22,6 +22,7 @@ const initialProduct = {
   price: 0,
   offerPercentage: 0,
   offerPrice: 0,
+  buyingPrice: 0,
   description: "",
   category: "",
   subcategory: "",
@@ -95,6 +96,7 @@ const ProductForm = () => {
     price: 0,
     offerPercentage: 0,
     offerPrice: 0,
+    buyingPrice: 0,
     description: "",
     category: "",
     subcategory: "",
@@ -517,6 +519,20 @@ const ProductForm = () => {
           onChange={handleChange}
           className="border p-2 w-full rounded bg-gray-100"
           placeholder="Enter product price"
+          required
+          min="0"
+        />
+      </div>
+      <div>
+        <label className="block font-bold mb-2">Buying Price</label>
+        <input
+          type="number"
+          onWheel={(e) => e.target.blur()}
+          name="buyingPrice"
+          value={product.buyingPrice}
+          onChange={handleChange}
+          className="border p-2 w-full rounded bg-gray-100"
+          placeholder="Enter product Buying Price"
           required
           min="0"
         />
