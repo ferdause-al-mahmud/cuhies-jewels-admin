@@ -1,54 +1,168 @@
-"use client"; // This is a client-side component
+"use client";
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { FiMenu } from "react-icons/fi"; // Dashboard Icon
-import { AiOutlineClose } from "react-icons/ai"; // Close Icon
-import { IoLogOutOutline } from "react-icons/io5"; // Logout Icon
+import { usePathname } from "next/navigation";
 import {
-  MdPeopleAlt,
-  MdAnalytics,
-  MdShoppingCart,
-  MdAddBox,
-  MdInventory,
-  MdAssignment,
-  MdProductionQuantityLimits,
-  MdManageAccounts,
-} from "react-icons/md"; // Various Icons
-import { useAuthState, useSignOut } from "react-firebase-hooks/auth"; // Firebase sign out hook
-import { auth } from "@/app/firebase/firebase.config"; // Import your Firebase config
+  ChevronLeft,
+  LayoutDashboard,
+  TrendingUp,
+  ShoppingBag,
+  Package,
+  PackagePlus,
+  FileText,
+  Boxes,
+  Activity,
+  Users,
+  DollarSign,
+  UserCog,
+  Receipt,
+  LogOut,
+  Menu,
+  X,
+  Home,
+  ChevronRight,
+} from "lucide-react";
+import { useAuthState, useSignOut } from "react-firebase-hooks/auth";
+import { auth } from "@/app/firebase/firebase.config";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import useRole from "@/app/utils/useRole";
-import { ActivityIcon, DollarSign } from "lucide-react";
-import { FaDollarSign } from "react-icons/fa";
 
 const Sidebar = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const sidebarRef = useRef(null); // To reference the sidebar element
-  const [signOut, loading, error] = useSignOut(auth); // Firebase sign out hook
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const sidebarRef = useRef(null);
+  const pathname = usePathname();
   const router = useRouter();
+  const [signOut] = useSignOut(auth);
+  const [user] = useAuthState(auth);
+  const { role } = useRole(user?.email);
 
-  const [user, userLoading, userError] = useAuthState(auth);
-  const { role, loading: roleLoading } = useRole(user?.email);
+  // Navigation items configuration
+  const navigationItems = [
+    {
+      id: "sales",
+      label: "Sales Analytics",
+      icon: TrendingUp,
+      href: "/dashboard/sales-analytics",
+      color: "from-blue-500 to-blue-600",
+      bgColor: "bg-blue-500/10",
+      borderColor: "border-blue-500/20",
+      adminOnly: true,
+    },
+    {
+      id: "orders",
+      label: "All Orders",
+      icon: ShoppingBag,
+      href: "/dashboard/all-orders",
+      color: "from-emerald-500 to-emerald-600",
+      bgColor: "bg-emerald-500/10",
+      borderColor: "border-emerald-500/20",
+      adminOnly: false,
+    },
+    {
+      id: "add-product",
+      label: "Add Products",
+      icon: PackagePlus,
+      href: "/dashboard/add-product",
+      color: "from-purple-500 to-purple-600",
+      bgColor: "bg-purple-500/10",
+      borderColor: "border-purple-500/20",
+      adminOnly: false,
+    },
+    {
+      id: "products",
+      label: "All Products",
+      icon: Package,
+      href: "/dashboard/all-products",
+      color: "from-orange-500 to-orange-600",
+      bgColor: "bg-orange-500/10",
+      borderColor: "border-orange-500/20",
+      adminOnly: false,
+    },
+    {
+      id: "manual",
+      label: "Manual Entry",
+      icon: FileText,
+      href: "/dashboard/moderator-entry",
+      color: "from-indigo-500 to-indigo-600",
+      bgColor: "bg-indigo-500/10",
+      borderColor: "border-indigo-500/20",
+      adminOnly: false,
+    },
+    {
+      id: "stock",
+      label: "Stock",
+      icon: Boxes,
+      href: "/dashboard/stock",
+      color: "from-red-500 to-red-600",
+      bgColor: "bg-red-500/10",
+      borderColor: "border-red-500/20",
+      adminOnly: false,
+    },
+    {
+      id: "moderator",
+      label: "Moderator Activity",
+      icon: Activity,
+      href: "/dashboard/moderator-track",
+      color: "from-teal-500 to-teal-600",
+      bgColor: "bg-teal-500/10",
+      borderColor: "border-teal-500/20",
+      adminOnly: true,
+    },
+    {
+      id: "users",
+      label: "User Management",
+      icon: Users,
+      href: "/dashboard/user-management",
+      color: "from-cyan-500 to-cyan-600",
+      bgColor: "bg-cyan-500/10",
+      borderColor: "border-cyan-500/20",
+      adminOnly: true,
+    },
+    {
+      id: "expenses",
+      label: "Expense Management",
+      icon: DollarSign,
+      href: "/dashboard/expenses",
+      color: "from-yellow-500 to-yellow-600",
+      bgColor: "bg-yellow-500/10",
+      borderColor: "border-yellow-500/20",
+      adminOnly: true,
+    },
+    {
+      id: "employees",
+      label: "Employee Management",
+      icon: UserCog,
+      href: "/dashboard/employee-management",
+      color: "from-pink-500 to-pink-600",
+      bgColor: "bg-pink-500/10",
+      borderColor: "border-pink-500/20",
+      adminOnly: true,
+    },
+    {
+      id: "revenue",
+      label: "Gross Revenue",
+      icon: Receipt,
+      href: "/dashboard/product-revenue",
+      color: "from-rose-500 to-rose-600",
+      bgColor: "bg-rose-500/10",
+      borderColor: "border-rose-500/20",
+      adminOnly: true,
+    },
+  ];
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  const handleOutsideClick = (e) => {
-    if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
-      setSidebarOpen(false);
-    }
-  };
+  // Filter items based on role
+  const visibleItems = navigationItems.filter(
+    (item) => !item.adminOnly || (item.adminOnly && role === "admin")
+  );
 
   const handleLogout = async () => {
     try {
       const success = await signOut();
-
       if (success) {
         localStorage.removeItem("firebase_token");
-
-        toast.success("User logged out successfully");
+        toast.success("Logged out successfully");
         router.push("/");
       }
     } catch (error) {
@@ -57,260 +171,192 @@ const Sidebar = () => {
     }
   };
 
+  // Close mobile menu on outside click
   useEffect(() => {
-    if (sidebarOpen) {
+    const handleOutsideClick = (e) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+        setIsMobileOpen(false);
+      }
+    };
+
+    if (isMobileOpen) {
       document.addEventListener("mousedown", handleOutsideClick);
-    } else {
-      document.removeEventListener("mousedown", handleOutsideClick);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleOutsideClick);
     };
-  }, [sidebarOpen]);
+  }, [isMobileOpen]);
 
   return (
-    <div className="relative bg-gradient-to-b from-slate-900 to-slate-800">
-      <div
-        ref={sidebarRef}
-        className={`fixed left-0 top-0 z-50 w-72  bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-transform duration-300 transform
-                ${
-                  sidebarOpen
-                    ? "translate-x-0"
-                    : "-translate-x-full lg:translate-x-0"
-                } lg:translate-x-0 lg:relative lg:z-auto lg:min-h-screen h-screen flex flex-col`}
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileOpen(true)}
+        className="lg:hidden  fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
       >
-        {/* Header Section */}
-        <div className="flex justify-between items-center p-2 lg:p-6 border-b border-slate-700/50 bg-slate-900/50 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">D</span>
+        <Menu className="w-6 h-6 text-gray-700 dark:text-gray-200" />
+      </button>
+
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300" />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        ref={sidebarRef}
+        className={`
+          fixed top-0 left-0 h-full z-50 w-72
+          ${
+            isMobileOpen
+              ? "translate-x-0"
+              : "-translate-x-full lg:translate-x-0"
+          }
+          bg-white dark:bg-gray-900 
+          border-r border-gray-200 dark:border-gray-800
+          transition-all duration-300 ease-in-out
+          shadow-xl lg:shadow-none
+        `}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-800">
+            <div className={`flex items-center gap-3 `}>
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <LayoutDashboard className="w-5 h-5 text-white" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Dashboard
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {role === "admin" ? "Administrator" : "Moderator"}
+                </p>
+              </div>
             </div>
-            <h2 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              Dashboard
-            </h2>
+
+            {/* Collapse/Close buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsMobileOpen(false)}
+                className="lg:hidden p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Logout Button */}
+
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1">
+            {visibleItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              const isHovered = hoveredItem === item.id;
+
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  onMouseEnter={() => setHoveredItem(item.id)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  className={`
+                    relative flex items-center gap-3 px-3 py-2.5 rounded-lg
+                    transition-all duration-200 group
+                    ${
+                      isActive
+                        ? `${item.bgColor} ${item.borderColor} border`
+                        : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                    }
+                  `}
+                >
+                  <div
+                    className={`
+                    relative flex-shrink-0 p-2 rounded-lg
+                    ${
+                      isActive
+                        ? `bg-gradient-to-br ${item.color} shadow-lg`
+                        : "bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700"
+                    }
+                    transition-all duration-200
+                  `}
+                  >
+                    <Icon
+                      className={`
+                      w-5 h-5
+                      ${
+                        isActive
+                          ? "text-white"
+                          : "text-gray-600 dark:text-gray-400"
+                      }
+                    `}
+                    />
+                    {isActive && (
+                      <div className="absolute inset-0 rounded-lg bg-white/20 animate-pulse" />
+                    )}
+                  </div>
+                  <span
+                    className={`
+                      font-medium text-sm
+                      ${
+                        isActive
+                          ? "text-gray-900 dark:text-white"
+                          : "text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white"
+                      }
+                    `}
+                  >
+                    {item.label}
+                  </span>
+
+                  {/* Active indicator */}
+                  {isActive && (
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-l-full" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Footer */}
+          <div className="border-t border-gray-200 dark:border-gray-800 p-3">
             <button
-              className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-500/10 transition-all duration-200"
               onClick={handleLogout}
+              className={`
+                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
+                bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30
+                border border-red-200 dark:border-red-800
+                transition-all duration-200 group
+              `}
             >
-              <IoLogOutOutline className="text-lg text-red-400 group-hover:text-red-300" />
-              <span className="hidden sm:block text-sm font-medium text-slate-200 group-hover:text-red-300">
+              <div className="flex-shrink-0 p-2 bg-red-100 dark:bg-red-900/50 rounded-lg group-hover:bg-red-200 dark:group-hover:bg-red-900/70 transition-colors">
+                <LogOut className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <span className="font-medium text-sm text-red-700 dark:text-red-400">
                 Logout
               </span>
             </button>
-            {/* Close Button for Mobile */}
-            <button
-              onClick={toggleSidebar}
-              className="lg:hidden hover:bg-slate-700 p-2 rounded-lg transition-colors duration-200"
-            >
-              <AiOutlineClose className="text-xl text-slate-300" />
-            </button>
+
+            {/* User info */}
+            <div className="mt-3 px-3 py-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {user.email}
+              </p>
+            </div>
           </div>
         </div>
+      </aside>
 
-        {/* Navigation Section - Scrollable */}
-        <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar">
-          <ul className="space-y-2 pb-6">
-            {role === "admin" && (
-              <li>
-                <Link href="/dashboard/sales-analytics">
-                  <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                    <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors duration-200">
-                      <MdAnalytics className="text-lg text-blue-400" />
-                    </div>
-                    <span className="font-medium text-slate-200 group-hover:text-white">
-                      Sales Analytics
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            )}
-
-            <li>
-              <Link href="/dashboard/all-orders">
-                <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                  <div className="p-2 bg-green-500/20 rounded-lg group-hover:bg-green-500/30 transition-colors duration-200">
-                    <MdShoppingCart className="text-lg text-green-400" />
-                  </div>
-                  <span className="font-medium text-slate-200 group-hover:text-white">
-                    All Orders
-                  </span>
-                </div>
-              </Link>
-            </li>
-
-            <li>
-              <Link href="/dashboard/add-product">
-                <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                  <div className="p-2 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/30 transition-colors duration-200">
-                    <MdAddBox className="text-lg text-purple-400" />
-                  </div>
-                  <span className="font-medium text-slate-200 group-hover:text-white">
-                    Add Products
-                  </span>
-                </div>
-              </Link>
-            </li>
-
-            <li>
-              <Link href="/dashboard/all-products">
-                <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                  <div className="p-2 bg-orange-500/20 rounded-lg group-hover:bg-orange-500/30 transition-colors duration-200">
-                    <MdInventory className="text-lg text-orange-400" />
-                  </div>
-                  <span className="font-medium text-slate-200 group-hover:text-white">
-                    All Products
-                  </span>
-                </div>
-              </Link>
-            </li>
-
-            <li>
-              <Link href="/dashboard/moderator-entry">
-                <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                  <div className="p-2 bg-indigo-500/20 rounded-lg group-hover:bg-indigo-500/30 transition-colors duration-200">
-                    <MdAssignment className="text-lg text-indigo-400" />
-                  </div>
-                  <span className="font-medium text-slate-200 group-hover:text-white">
-                    Manual Entry
-                  </span>
-                </div>
-              </Link>
-            </li>
-
-            <li>
-              <Link href="/dashboard/stock">
-                <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                  <div className="p-2 bg-red-500/20 rounded-lg group-hover:bg-red-500/30 transition-colors duration-200">
-                    <MdProductionQuantityLimits className="text-lg text-red-400" />
-                  </div>
-                  <span className="font-medium text-slate-200 group-hover:text-white">
-                    Stock
-                  </span>
-                </div>
-              </Link>
-            </li>
-
-            {role === "admin" && (
-              <>
-                <li>
-                  <Link href="/dashboard/moderator-track">
-                    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                      <div className="p-2 bg-teal-500/20 rounded-lg group-hover:bg-teal-500/30 transition-colors duration-200">
-                        <ActivityIcon className="text-lg text-teal-400" />
-                      </div>
-                      <span className="font-medium text-slate-200 group-hover:text-white">
-                        Moderator Activity
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/dashboard/user-management">
-                    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                      <div className="p-2 bg-cyan-500/20 rounded-lg group-hover:bg-cyan-500/30 transition-colors duration-200">
-                        <MdPeopleAlt className="text-lg text-cyan-400" />
-                      </div>
-                      <span className="font-medium text-slate-200 group-hover:text-white">
-                        User Management
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/dashboard/expenses">
-                    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                      <div className="p-2 bg-yellow-500/20 rounded-lg group-hover:bg-yellow-500/30 transition-colors duration-200">
-                        <DollarSign className="text-lg text-yellow-400" />
-                      </div>
-                      <span className="font-medium text-slate-200 group-hover:text-white">
-                        Expense Management
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/dashboard/employee-management">
-                    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                      <div className="p-2 bg-pink-500/20 rounded-lg group-hover:bg-pink-500/30 transition-colors duration-200">
-                        <MdManageAccounts className="text-lg text-pink-400" />
-                      </div>
-                      <span className="font-medium text-slate-200 group-hover:text-white">
-                        Employee Management
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/product-revenue">
-                    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all duration-200 hover:translate-x-1">
-                      <div className="p-2 bg-pink-500/20 rounded-lg group-hover:bg-pink-500/30 transition-colors duration-200">
-                        <FaDollarSign className="text-lg text-pink-400" />
-                      </div>
-                      <span className="font-medium text-slate-200 group-hover:text-white">
-                        Gross revenue
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-              </>
-            )}
-          </ul>
-        </nav>
-      </div>
-
-      {/* Mobile Menu Button */}
+      {/* Main content offset */}
       <div
-        className={`${
-          sidebarOpen && "hidden"
-        } w-full  fixed top-0  left-0 z-30 bg-gradient-to-br from-slate-800 to-slate-700 text-white  shadow-lg`}
-      >
-        <button
-          className={` lg:hidden p-3 hover:bg-slate-700 rounded-md ml-5 hover:shadow-xl transition-all duration-200 hover:scale-115`}
-          onClick={toggleSidebar}
-        >
-          <FiMenu className="text-2xl" />
-        </button>
-      </div>
-      {/* <button
-        className={`${
-          sidebarOpen && "hidden"
-        } lg:hidden fixed top-0 w-full left-0 z-30 p-3 bg-gradient-to-br from-slate-800 to-slate-700 text-white  shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105`}
-        onClick={toggleSidebar}
-      >
-        <FiMenu className="text-xl" />
-      </button> */}
-
-      <style jsx>{`
-        .custom-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: #475569 transparent;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #475569;
-          border-radius: 3px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: #64748b;
-        }
-      `}</style>
-    </div>
+        className={`
+        lg:ml-72}
+        transition-all duration-300
+      `}
+      />
+    </>
   );
 };
 
