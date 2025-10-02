@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 export async function PUT(req, { params }) {
     try {
         const { id } = params
-        const { phone, cart, total, notes, address, shippingCost, consignment_id, orderFrom, lastDigits } = await req.json()
+        const { phone, cart, total, notes, address, shippingCost, consignment_id, orderFrom, lastDigits, advancePayment, discount } = await req.json()
         const parsedId = parseInt(id, 10)
         // ValparsedIdate input
         if (!parsedId) {
@@ -37,6 +37,8 @@ export async function PUT(req, { params }) {
             cart: cart,
             total: total,
             shippingCost: shippingCost || 0,
+            advancePayment: advancePayment || 0,
+            discount: discount || 0,
             consignment_id: consignment_id || "",
             orderFrom: orderFrom || "",
             lastDigits: lastDigits || "",

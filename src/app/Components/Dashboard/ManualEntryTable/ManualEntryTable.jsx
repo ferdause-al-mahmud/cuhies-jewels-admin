@@ -67,9 +67,11 @@ const ManualEntryTable = ({
     },
     cart: [],
     paymentOption: "bkash",
+    shippingOption: "insideDhaka",
+
     advancePayment: 0,
     total: 0,
-    shippingCost: 0,
+    shippingCost: 80,
     discount: 0,
     status: "pending",
     orderFrom: "facebook",
@@ -92,6 +94,8 @@ const ManualEntryTable = ({
     cart: [],
     total: 0,
     shippingCost: 0,
+    advancePayment: 0,
+    discount: 0,
     orderFrom: "",
     lastDigits: "",
   });
@@ -223,6 +227,8 @@ const ManualEntryTable = ({
       ],
       total: order.total,
       shippingCost: order.shippingCost || 0,
+      advancePayment: order.advancePayment || 0,
+      discount: order.discount || 0,
       orderFrom: order.orderFrom || "",
       lastDigits: order.lastDigits || "",
     });
@@ -250,11 +256,93 @@ const ManualEntryTable = ({
     });
   };
 
+  const handleShippingCostChange = (value) => {
+    const shippingCost = Number.parseInt(value, 10) || 0;
+
+    // Recalculate total with new shipping cost
+    const cartTotal = calculateTotal(editFormData.cart);
+    const newTotal =
+      cartTotal +
+      shippingCost -
+      parseInt(editFormData.advancePayment) -
+      parseInt(editFormData.discount);
+
+    setEditFormData({
+      ...editFormData,
+      shippingCost: shippingCost,
+      total: newTotal,
+    });
+  };
+
+  const handleAdvancePaymentChange = (value) => {
+    const advancePayment = Number.parseInt(value, 10) || 0;
+
+    // Recalculate total with new advance payment
+    const cartTotal = calculateTotal(editFormData.cart);
+    const newTotal =
+      cartTotal +
+      editFormData.shippingCost -
+      advancePayment -
+      parseInt(editFormData.discount);
+
+    setEditFormData({
+      ...editFormData,
+      advancePayment: advancePayment,
+      total: newTotal,
+    });
+  };
+
+  const handleDiscountChange = (value) => {
+    const discount = Number.parseInt(value, 10) || 0;
+
+    // Recalculate total with new discount
+    const cartTotal = calculateTotal(editFormData.cart);
+    const newTotal =
+      cartTotal +
+      editFormData.shippingCost -
+      parseInt(editFormData.advancePayment) -
+      discount;
+
+    setEditFormData({
+      ...editFormData,
+      discount: discount,
+      total: newTotal,
+    });
+  };
+
   const handleNotesChange = (e) => {
     setEditFormData({
       ...editFormData,
       notes: e.target.value,
     });
+  };
+
+  const handleShippingOptionChange = (value) => {
+    let cost = 0;
+    switch (value) {
+      case "insideDhaka":
+        cost = 80;
+        break;
+      case "dhakaSubCity":
+        cost = 120;
+        break;
+      case "outsideDhaka":
+        cost = 140;
+        break;
+      default:
+        cost = 0;
+    }
+
+    const cartTotal = newOrderData.cart.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    const newTotal =
+      cartTotal + cost - newOrderData.discount - newOrderData.advancePayment;
+
+    handleNewOrderFieldChange("shippingOption", value);
+    handleNewOrderFieldChange("shippingCost", cost);
+    handleNewOrderFieldChange("total", newTotal);
   };
 
   const handleAddressFieldChange = (field, value) => {
@@ -287,7 +375,11 @@ const ManualEntryTable = ({
     newCart[index].quantity = newQuantity;
 
     const cartTotal = calculateTotal(newCart);
-    const newTotal = cartTotal + editFormData.shippingCost;
+    const newTotal =
+      cartTotal +
+      editFormData.shippingCost -
+      parseInt(editFormData.advancePayment) -
+      parseInt(editFormData.discount);
 
     setEditFormData({
       ...editFormData,
@@ -324,7 +416,11 @@ const ManualEntryTable = ({
     newCart[index].price = newPrice;
 
     const cartTotal = calculateTotal(newCart);
-    const newTotal = cartTotal + editFormData.shippingCost;
+    const newTotal =
+      cartTotal +
+      editFormData.shippingCost -
+      parseInt(editFormData.advancePayment) -
+      parseInt(editFormData.discount);
 
     setEditFormData({
       ...editFormData,
@@ -380,7 +476,11 @@ const ManualEntryTable = ({
       newCart[existingItemIndex].quantity += 1;
 
       const cartTotal = calculateTotal(newCart);
-      const newTotal = cartTotal + editFormData.shippingCost;
+      const newTotal =
+        cartTotal +
+        editFormData.shippingCost -
+        parseInt(editFormData.advancePayment) -
+        parseInt(editFormData.discount);
 
       setEditFormData({
         ...editFormData,
@@ -401,7 +501,11 @@ const ManualEntryTable = ({
 
       const newCart = [...editFormData.cart, newItem];
       const cartTotal = calculateTotal(newCart);
-      const newTotal = cartTotal + editFormData.shippingCost;
+      const newTotal =
+        cartTotal +
+        editFormData.shippingCost -
+        parseInt(editFormData.advancePayment) -
+        parseInt(editFormData.discount);
 
       setEditFormData({
         ...editFormData,
@@ -515,6 +619,8 @@ const ManualEntryTable = ({
           })),
           total: editFormData.total,
           shippingCost: editFormData.shippingCost,
+          advancePayment: editFormData.advancePayment,
+          discount: editFormData.discount,
           orderFrom: editFormData.orderFrom,
           lastDigits: editFormData.lastDigits,
         }),
@@ -549,7 +655,11 @@ const ManualEntryTable = ({
   const removeProductFromOrder = (index) => {
     const newCart = editFormData.cart.filter((_, i) => i !== index);
     const cartTotal = calculateTotal(newCart);
-    const newTotal = cartTotal + editFormData.shippingCost;
+    const newTotal =
+      cartTotal +
+      editFormData.shippingCost -
+      parseInt(editFormData.advancePayment) -
+      parseInt(editFormData.discount);
 
     setEditFormData({
       ...editFormData,
@@ -576,9 +686,11 @@ const ManualEntryTable = ({
       },
       cart: [],
       paymentOption: "bkash",
+      shippingOption: "insideDhaka",
+
       advancePayment: 0,
       total: 0,
-      shippingCost: 0,
+      shippingCost: 80,
       discount: 0,
       status: "pending",
       moderatorEmail: user?.email || "",
@@ -660,7 +772,10 @@ const ManualEntryTable = ({
       0
     );
     const newTotal =
-      cartTotal + newOrderData.shippingCost - newOrderData.discount;
+      cartTotal +
+      newOrderData.shippingCost -
+      newOrderData.discount -
+      newOrderData.advancePayment;
 
     setNewOrderData((prev) => ({
       ...prev,
@@ -690,7 +805,10 @@ const ManualEntryTable = ({
       0
     );
     const newTotal =
-      cartTotal + newOrderData.shippingCost - newOrderData.discount;
+      cartTotal +
+      newOrderData.shippingCost -
+      newOrderData.discount -
+      newOrderData.advancePayment;
 
     setNewOrderData((prev) => ({
       ...prev,
@@ -709,7 +827,10 @@ const ManualEntryTable = ({
       0
     );
     const newTotal =
-      cartTotal + newOrderData.shippingCost - newOrderData.discount;
+      cartTotal +
+      newOrderData.shippingCost -
+      newOrderData.discount -
+      newOrderData.advancePayment;
     if (newCart.length === 0) {
       setAddedProducts([]);
     }
@@ -730,7 +851,10 @@ const ManualEntryTable = ({
       0
     );
     const newTotal =
-      cartTotal + newOrderData.shippingCost - newOrderData.discount;
+      cartTotal +
+      newOrderData.shippingCost -
+      newOrderData.discount -
+      newOrderData.advancePayment;
 
     setNewOrderData((prev) => ({
       ...prev,
@@ -771,7 +895,10 @@ const ManualEntryTable = ({
       0
     );
     const newTotal =
-      cartTotal + newOrderData.shippingCost - newOrderData.discount;
+      cartTotal +
+      newOrderData.shippingCost -
+      newOrderData.discount -
+      newOrderData.advancePayment;
 
     setNewOrderData((prev) => ({
       ...prev,
@@ -1048,7 +1175,7 @@ const ManualEntryTable = ({
                           )}
                           <Box>
                             <Typography variant="subtitle1">
-                              {item.name}
+                              {item.id}
                             </Typography>
                             {item?.selectedSize && (
                               <Typography variant="body2">
@@ -1137,6 +1264,9 @@ const ManualEntryTable = ({
         handlePhoneChange={handlePhoneChange}
         handleNotesChange={handleNotesChange}
         handleAddressFieldChange={handleAddressFieldChange}
+        handleShippingCostChange={handleShippingCostChange}
+        handleAdvancePaymentChange={handleAdvancePaymentChange}
+        handleDiscountChange={handleDiscountChange}
         handleOrderFromChange={handleOrderFromChange}
         handleLastDigitsChange={handleLastDigitsChange}
         productSearchQuery={productSearchQuery}
@@ -1307,6 +1437,40 @@ const ManualEntryTable = ({
                 </TextField>
                 <TextField
                   select
+                  label="Shipping Option"
+                  fullWidth
+                  value={newOrderData.shippingOption}
+                  onChange={(e) => handleShippingOptionChange(e.target.value)}
+                  margin="normal"
+                >
+                  <MenuItem value="insideDhaka">Inside Dhaka</MenuItem>
+                  <MenuItem value="dhakaSubCity">Dhaka Sub City</MenuItem>
+                  <MenuItem value="outsideDhaka">Outside Dhaka</MenuItem>
+                </TextField>
+                <TextField
+                  label="Shipping Cost"
+                  type="number"
+                  fullWidth
+                  value={newOrderData.shippingCost}
+                  onChange={(e) => {
+                    const cost = Number.parseInt(e.target.value, 10) || 0;
+                    const cartTotal = newOrderData.cart.reduce(
+                      (sum, item) => sum + item.price * item.quantity,
+                      0
+                    );
+                    const newTotal =
+                      cartTotal +
+                      cost -
+                      newOrderData.discount -
+                      newOrderData.advancePayment;
+
+                    handleNewOrderFieldChange("shippingCost", cost);
+                    handleNewOrderFieldChange("total", newTotal);
+                  }}
+                  margin="normal"
+                />
+                <TextField
+                  select
                   label="Order From"
                   fullWidth
                   value={newOrderData.orderFrom}
@@ -1352,7 +1516,10 @@ const ManualEntryTable = ({
                       0
                     );
                     const newTotal =
-                      cartTotal + newOrderData.shippingCost - advancePayment;
+                      cartTotal +
+                      newOrderData.shippingCost -
+                      advancePayment -
+                      newOrderData.discount;
 
                     handleNewOrderFieldChange("advancePayment", advancePayment);
                     handleNewOrderFieldChange("total", newTotal);
@@ -1408,7 +1575,10 @@ const ManualEntryTable = ({
                       0
                     );
                     const newTotal =
-                      cartTotal + newOrderData.shippingCost - discount;
+                      cartTotal +
+                      newOrderData.shippingCost -
+                      discount -
+                      newOrderData.advancePayment;
 
                     handleNewOrderFieldChange("discount", discount);
                     handleNewOrderFieldChange("total", newTotal);

@@ -87,6 +87,8 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
     cart: [],
     total: 0,
     shippingCost: 0,
+    advancePayment: 0,
+    discount: 0,
     orderFrom: "",
     lastDigits: "",
   });
@@ -812,6 +814,8 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
       ],
       total: order.total,
       shippingCost: order.shippingCost || 0,
+      advancePayment: order.advancePayment || 0,
+      discount: order.discount || 0,
       consignment_id: order?.consignment_id,
       orderFrom: order.orderFrom || "",
       lastDigits: order.lastDigits || "",
@@ -880,6 +884,42 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
     setEditFormData({
       ...editFormData,
       shippingCost: shippingCost,
+      total: newTotal,
+    });
+  };
+
+  const handleAdvancePaymentChange = (value) => {
+    const advancePayment = Number.parseInt(value, 10) || 0;
+
+    // Recalculate total with new advance payment
+    const cartTotal = calculateTotal(editFormData.cart);
+    const newTotal =
+      cartTotal +
+      editFormData.shippingCost -
+      advancePayment -
+      parseInt(editFormData.discount);
+
+    setEditFormData({
+      ...editFormData,
+      advancePayment: advancePayment,
+      total: newTotal,
+    });
+  };
+
+  const handleDiscountChange = (value) => {
+    const discount = Number.parseInt(value, 10) || 0;
+
+    // Recalculate total with new discount
+    const cartTotal = calculateTotal(editFormData.cart);
+    const newTotal =
+      cartTotal +
+      editFormData.shippingCost -
+      parseInt(editFormData.advancePayment) -
+      discount;
+
+    setEditFormData({
+      ...editFormData,
+      discount: discount,
       total: newTotal,
     });
   };
@@ -1137,6 +1177,8 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
           })),
           total: editFormData.total,
           shippingCost: editFormData.shippingCost,
+          advancePayment: editFormData.advancePayment,
+          discount: editFormData.discount,
           orderFrom: editFormData.orderFrom,
           lastDigits: editFormData.lastDigits,
         }),
@@ -1758,7 +1800,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
                           )}
                           <Box>
                             <Typography variant="subtitle1">
-                              {item.name}
+                              {item.id}
                             </Typography>
                             {item?.selectedSize && (
                               <Typography variant="body2">
@@ -1892,6 +1934,9 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
         handleItemPriceChange={handleItemPriceChange}
         removeProductFromOrder={removeProductFromOrder}
         handleItemVariantChange={handleItemVariantChange}
+        handleShippingCostChange={handleShippingCostChange}
+        handleAdvancePaymentChange={handleAdvancePaymentChange}
+        handleDiscountChange={handleDiscountChange}
       />
     </Box>
   );

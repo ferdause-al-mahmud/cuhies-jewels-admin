@@ -193,14 +193,14 @@ const Sidebar = () => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(true)}
-        className="lg:hidden  fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border border-slate-700"
       >
-        <Menu className="w-6 h-6 text-gray-700 dark:text-gray-200" />
+        <Menu className="w-6 h-6 text-slate-200" />
       </button>
 
       {/* Mobile Overlay */}
       {isMobileOpen && (
-        <div className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300" />
+        <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300" />
       )}
 
       {/* Sidebar */}
@@ -213,39 +213,37 @@ const Sidebar = () => {
               ? "translate-x-0"
               : "-translate-x-full lg:translate-x-0"
           }
-          bg-white dark:bg-gray-900 
-          border-r border-gray-200 dark:border-gray-800
+          bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950
+          border-r border-slate-800
           transition-all duration-300 ease-in-out
-          shadow-xl lg:shadow-none
+          shadow-2xl lg:shadow-none
         `}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between h-16 px-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm">
             <div className={`flex items-center gap-3 `}>
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                   <LayoutDashboard className="w-5 h-5 text-white" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 shadow-lg" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Dashboard
-                </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <h2 className="text-lg font-bold text-white">Dashboard</h2>
+                <p className="text-xs text-slate-400">
                   {role === "admin" ? "Administrator" : "Moderator"}
                 </p>
               </div>
             </div>
 
-            {/* Collapse/Close buttons */}
+            {/* Close button */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsMobileOpen(false)}
-                className="lg:hidden p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="lg:hidden p-1.5 hover:bg-slate-800 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
           </div>
@@ -268,8 +266,8 @@ const Sidebar = () => {
                     transition-all duration-200 group
                     ${
                       isActive
-                        ? `${item.bgColor} ${item.borderColor} border`
-                        : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                        ? `${item.bgColor} ${item.borderColor} border backdrop-blur-sm`
+                        : "hover:bg-slate-800/50"
                     }
                   `}
                 >
@@ -279,7 +277,7 @@ const Sidebar = () => {
                     ${
                       isActive
                         ? `bg-gradient-to-br ${item.color} shadow-lg`
-                        : "bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700"
+                        : "bg-slate-800/50 group-hover:bg-slate-700/50"
                     }
                     transition-all duration-200
                   `}
@@ -290,12 +288,12 @@ const Sidebar = () => {
                       ${
                         isActive
                           ? "text-white"
-                          : "text-gray-600 dark:text-gray-400"
+                          : "text-slate-400 group-hover:text-slate-300"
                       }
                     `}
                     />
                     {isActive && (
-                      <div className="absolute inset-0 rounded-lg bg-white/20 animate-pulse" />
+                      <div className="absolute inset-0 rounded-lg bg-white/10 animate-pulse" />
                     )}
                   </div>
                   <span
@@ -303,8 +301,8 @@ const Sidebar = () => {
                       font-medium text-sm
                       ${
                         isActive
-                          ? "text-gray-900 dark:text-white"
-                          : "text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white"
+                          ? "text-white"
+                          : "text-slate-300 group-hover:text-white"
                       }
                     `}
                   >
@@ -313,7 +311,7 @@ const Sidebar = () => {
 
                   {/* Active indicator */}
                   {isActive && (
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-l-full" />
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-l-full shadow-lg shadow-blue-500/50" />
                   )}
                 </Link>
               );
@@ -321,29 +319,27 @@ const Sidebar = () => {
           </nav>
 
           {/* Footer */}
-          <div className="border-t border-gray-200 dark:border-gray-800 p-3">
+          <div className="border-t border-slate-800 p-3 bg-slate-900/50 backdrop-blur-sm">
             <button
               onClick={handleLogout}
               className={`
                 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-                bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30
-                border border-red-200 dark:border-red-800
+                bg-red-500/10 hover:bg-red-500/20
+                border border-red-500/20 hover:border-red-500/30
                 transition-all duration-200 group
               `}
             >
-              <div className="flex-shrink-0 p-2 bg-red-100 dark:bg-red-900/50 rounded-lg group-hover:bg-red-200 dark:group-hover:bg-red-900/70 transition-colors">
-                <LogOut className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <div className="flex-shrink-0 p-2 bg-red-500/20 rounded-lg group-hover:bg-red-500/30 transition-colors">
+                <LogOut className="w-5 h-5 text-red-400" />
               </div>
-              <span className="font-medium text-sm text-red-700 dark:text-red-400">
+              <span className="font-medium text-sm text-red-400 group-hover:text-red-300">
                 Logout
               </span>
             </button>
 
             {/* User info */}
-            <div className="mt-3 px-3 py-2">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {user.email}
-              </p>
+            <div className="mt-3 px-3 py-2 bg-slate-800/30 rounded-lg border border-slate-800">
+              <p className="text-xs text-slate-400 truncate">{user.email}</p>
             </div>
           </div>
         </div>
@@ -352,7 +348,7 @@ const Sidebar = () => {
       {/* Main content offset */}
       <div
         className={`
-        lg:ml-72}
+        lg:ml-72
         transition-all duration-300
       `}
       />

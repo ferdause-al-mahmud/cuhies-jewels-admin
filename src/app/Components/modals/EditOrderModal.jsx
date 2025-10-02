@@ -43,6 +43,9 @@ const EditOrderModal = ({
   handleItemPriceChange,
   handleItemVariantChange,
   removeProductFromOrder,
+  handleShippingCostChange,
+  handleAdvancePaymentChange,
+  handleDiscountChange,
 }) => {
   const [cartProducts, setCartProducts] = useState([]);
 
@@ -197,6 +200,52 @@ const EditOrderModal = ({
                   onChange={(e) =>
                     handleAddressFieldChange("zilla", e.target.value)
                   }
+                  variant="outlined"
+                  margin="normal"
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Shipping Cost"
+                  value={editFormData.shippingCost}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">৳</InputAdornment>
+                    ),
+                  }}
+                  onChange={(e) => handleShippingCostChange(e.target.value)}
+                  variant="outlined"
+                  margin="normal"
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Advance"
+                  value={editFormData.advancePayment}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">৳</InputAdornment>
+                    ),
+                  }}
+                  onChange={(e) => handleAdvancePaymentChange(e.target.value)}
+                  variant="outlined"
+                  margin="normal"
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Discount"
+                  value={editFormData.discount}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">৳</InputAdornment>
+                    ),
+                  }}
+                  onChange={(e) => handleDiscountChange(e.target.value)}
                   variant="outlined"
                   margin="normal"
                 />
