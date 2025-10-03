@@ -507,37 +507,36 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
       const response = await fetch(`/api/all-orders?${queryParams.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch counts");
       const data = await response.json();
-      const allOrders = data.orders || [];
 
-      // Calculate counts using the same logic as sales-analytics
-      const pendingOrders = allOrders.filter(
-        (order) => order.status === "pending"
-      );
-      const exchangeOrders = allOrders.filter(
-        (order) => order.status === "exchange"
-      );
-      const confirmedOrders = allOrders.filter(
-        (order) => order.status === "confirmed"
-      );
-      const shippedOrders = allOrders.filter(
-        (order) => order.status === "shipped"
-      );
-      const deliveredOrders = allOrders.filter(
-        (order) => order.status === "delivered"
-      );
-      const returnedOrders = allOrders.filter(
-        (order) => order.status === "returned"
-      );
+      // Use the counts already calculated by the API
+      let counts = {
+        all: data.totalOrders,
+        pending: data.pendingOrdersCount,
+        exchange: data.exchangeOrdersCount,
+        confirmed: data.confirmedOrdersCount,
+        shipped: data.shippedOrdersCount,
+        delivered: data.deliveredOrdersCount,
+        returned: data.returnedOrdersCount,
+      };
 
-      setStatusCounts({
-        all: allOrders.length,
-        pending: pendingOrders.length,
-        exchange: exchangeOrders.length,
-        confirmed: confirmedOrders.length,
-        shipped: shippedOrders.length,
-        delivered: deliveredOrders.length,
-        returned: returnedOrders.length,
-      });
+      // Adjust counts based on orderType filter
+      if (orderType === "manual") {
+        counts.pending = data.manualPendingOrdersCount;
+        counts.exchange = data.manualExchangeOrdersCount;
+        counts.confirmed = data.manualConfirmedOrdersCount;
+        counts.shipped = data.manualShippedOrdersCount;
+        counts.delivered = data.deliveredManualOrdersCount;
+        counts.returned = data.manualReturnedOrdersCount;
+      } else if (orderType === "web") {
+        counts.pending = data.webPendingOrdersCount;
+        counts.exchange = data.webExchangeOrdersCount;
+        counts.confirmed = data.webConfirmedOrdersCount;
+        counts.shipped = data.webShippedOrdersCount;
+        counts.delivered = data.deliveredWebOrdersCount;
+        counts.returned = data.webReturnedOrdersCount;
+      }
+
+      setStatusCounts(counts);
     } catch (error) {
       console.error("Error fetching order counts:", error);
     }

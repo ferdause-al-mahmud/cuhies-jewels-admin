@@ -2,113 +2,85 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Box, Typography, Grid, Paper } from "@mui/material";
+import { Box, Typography, Grid, Paper, CircularProgress } from "@mui/material";
 import ImageManager from "@/app/Components/Dashboard/ImageManeger/ImageManager";
 
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { format, set, subDays } from "date-fns";
-import Loader from "@/app/Components/loader/Loader";
-
-const countTotalRevenue = (orders) => {
-  return orders.reduce((total, order) => total + order.total, 0);
-};
+import { format, subDays } from "date-fns";
 
 const Dashboard = () => {
-  const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [startDate, setStartDate] = useState(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState(new Date());
+
+  // Aggregated data from API
+  const [dashboardData, setDashboardData] = useState({
+    totalOrders: 0,
+    manualOrdersCount: 0,
+    webOrdersCount: 0,
+    totalDeliveredSales: 0,
+    totalWebSales: 0,
+    totalManualSales: 0,
+    deliveredOrdersCount: 0,
+    deliveredManualOrdersCount: 0,
+    deliveredWebOrdersCount: 0,
+    pendingOrdersCount: 0,
+    manualPendingOrdersCount: 0,
+    webPendingOrdersCount: 0,
+    shippedOrdersCount: 0,
+    manualShippedOrdersCount: 0,
+    webShippedOrdersCount: 0,
+    returnedOrdersCount: 0,
+    manualReturnedOrdersCount: 0,
+    webReturnedOrdersCount: 0,
+    revenueByMonth: {},
+  });
+
   const formattedStartDate = format(startDate, "yyyy-MM-dd");
   const formattedEndDate = format(endDate, "yyyy-MM-dd");
-  const [totalSales, setTotalSales] = useState(0);
-  const [totalWebSales, setTotalWebSales] = useState(0);
-  const [totalManualSales, setTotalManualSales] = useState(0);
-  const [overAllDeliveredOrders, setoverAllDeliveredOrders] = useState([]);
-  const [totalOrders, setTotalOrders] = useState(0);
-  const [totalManualOrders, setTotalManualOrders] = useState(0);
-  const [totalWebOrders, setTotalWebOrders] = useState(0);
-  const [deliveredWebOrdersCount, setDeliveredWebOrdersCount] = useState(0);
-  const [deliveredManualOrdersCount, setDeliveredManualOrdersCount] =
-    useState(0);
-  // Fetch orders from the API when the component mounts
+
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
       try {
         const response = await axios.get(
-          `/api/all-orders?startDate=${formattedStartDate}&endDate=${formattedEndDate}`
+          `/api/all-orders?startDate=${formattedStartDate}&endDate=${formattedEndDate}&page=1&limit=1`
         );
-        setOrders(response.data.orders || []);
-        setTotalSales(response.data.totalDeliveredSales || 0);
-        setTotalWebSales(response.data.totalWebSales || 0);
-        setTotalManualSales(response.data.totalManualSales || 0);
-        setoverAllDeliveredOrders(response.data.deliveredOrders || 0);
-        setTotalOrders(response.data.totalOrders || 0);
-        setTotalManualOrders(response.data.manualOrdersCount || 0);
-        setTotalWebOrders(response.data.webOrdersCount || 0);
-        setDeliveredWebOrdersCount(response.data.deliveredWebOrdersCount || 0);
-        setDeliveredManualOrdersCount(
-          response.data.deliveredManualOrdersCount || 0
-        );
-        // Access 'orders' key from the response
+
+        setDashboardData({
+          totalOrders: response.data.totalOrders || 0,
+          manualOrdersCount: response.data.manualOrdersCount || 0,
+          webOrdersCount: response.data.webOrdersCount || 0,
+          totalDeliveredSales: response.data.totalDeliveredSales || 0,
+          totalWebSales: response.data.totalWebSales || 0,
+          totalManualSales: response.data.totalManualSales || 0,
+          deliveredOrdersCount: response.data.deliveredOrdersCount || 0,
+          deliveredManualOrdersCount:
+            response.data.deliveredManualOrdersCount || 0,
+          deliveredWebOrdersCount: response.data.deliveredWebOrdersCount || 0,
+          pendingOrdersCount: response.data.pendingOrdersCount || 0,
+          manualPendingOrdersCount: response.data.manualPendingOrdersCount || 0,
+          webPendingOrdersCount: response.data.webPendingOrdersCount || 0,
+          shippedOrdersCount: response.data.shippedOrdersCount || 0,
+          manualShippedOrdersCount: response.data.manualShippedOrdersCount || 0,
+          webShippedOrdersCount: response.data.webShippedOrdersCount || 0,
+          returnedOrdersCount: response.data.returnedOrdersCount || 0,
+          manualReturnedOrdersCount:
+            response.data.manualReturnedOrdersCount || 0,
+          webReturnedOrdersCount: response.data.webReturnedOrdersCount || 0,
+          revenueByMonth: response.data.revenueByMonth || {},
+        });
       } catch (error) {
-        console.error("Error fetching orders:", error);
-        setOrders([]); // Fallback to an empty array if an error occurs
+        console.error("Error fetching dashboard data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchOrders();
+    fetchDashboardData();
   }, [formattedStartDate, formattedEndDate]);
-
-  const deliveredOrders = orders.filter(
-    (order) => order.status === "delivered"
-  );
-  const returnedOrders = orders.filter((order) => order.status === "returned");
-  const pendingOrders = orders.filter((order) => order.status === "pending");
-  const shippedOrders = orders.filter((order) => order.status === "shipped");
-
-  const manualOrder = deliveredOrders.filter(
-    (order) => order.type === "manual"
-  );
-
-  const allManualOrders = orders.filter((order) => order.type === "manual");
-  const allWebOrders = orders.filter((order) => !order.type);
-  const allManualReturnedOrders = allManualOrders.filter(
-    (order) => order.status === "returned"
-  );
-  const allWebReturnedOrders = allWebOrders.filter(
-    (order) => order.status === "returned"
-  );
-
-  const allManualPendingOrders = allManualOrders.filter(
-    (order) => order.status === "pending"
-  );
-  const allWebPendingOrders = allWebOrders.filter(
-    (order) => order.status === "pending"
-  );
-
-  const allManualShippedOrders = allManualOrders.filter(
-    (order) => order.status === "shipped"
-  );
-  const allWebShippedOrders = allWebOrders.filter(
-    (order) => order.status === "shipped"
-  );
-
-  const webOrder = deliveredOrders.filter((order) => !order.type);
-
-  const totalDeliveredOrdersCount = overAllDeliveredOrders.length;
-  const totalReturnedOrders = returnedOrders.length;
-  const totalAllManualReturnedOrders = allManualReturnedOrders.length;
-  const totalAllWebReturnedOrders = allWebReturnedOrders.length;
-  const totalPendingOrders = pendingOrders.length;
-  const totalAllManualPendingOrders = allManualPendingOrders.length;
-  const totalAllWebPendingOrders = allWebPendingOrders.length;
-  const totalShippedOrders = shippedOrders.length;
-  const totalAllManualShippedOrders = allManualShippedOrders.length;
-  const totalAllWebShippedOrders = allWebShippedOrders.length;
 
   const formatMonthYear = (date) => {
     const monthNames = [
@@ -129,50 +101,20 @@ const Dashboard = () => {
     return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
   };
 
-  // Aggregate monthly revenue (for delivered orders only)
-  const revenueByMonth = overAllDeliveredOrders?.reduce((acc, order) => {
-    const monthYear = formatMonthYear(order.createdAt);
-    if (!acc[monthYear]) {
-      acc[monthYear] = { month: monthYear, revenue: 0 };
-    }
-    acc[monthYear].revenue += order?.total_revenue
-      ? order.total_revenue
-      : order?.total;
-    return acc;
-  }, {});
-
-  //revenue by month for web order
-  const webRevenueByMonth = webOrder.reduce((acc, order) => {
-    const monthYear = formatMonthYear(order.createdAt);
-    if (!acc[monthYear]) {
-      acc[monthYear] = { month: monthYear, revenue: 0 };
-    }
-    acc[monthYear].revenue += order?.total_revenue
-      ? order.total_revenue
-      : order?.total;
-    return acc;
-  }, {});
-
-  //revenue by month for manual order
-  const manualRevenueByMonth = manualOrder.reduce((acc, order) => {
-    const monthYear = formatMonthYear(order.createdAt);
-    if (!acc[monthYear]) {
-      acc[monthYear] = { month: monthYear, revenue: 0 };
-    }
-    acc[monthYear].revenue += order?.total_revenue
-      ? order.total_revenue
-      : order?.total;
-    return acc;
-  }, {});
-
-  const currentMonth = formatMonthYear(new Date());
-  const monthlyTotalSales = revenueByMonth[currentMonth]?.revenue || 0;
-  const manualMonthlyTotalSales =
-    manualRevenueByMonth[currentMonth]?.revenue || 0;
-  const webMonthlyTotalSales = webRevenueByMonth[currentMonth]?.revenue || 0;
+  const currentMonth = Object.values(dashboardData.revenueByMonth)?.[0];
+  // Assuming sorted newest first (Sep 2025, Aug 2025, etc.)
 
   if (isLoading) {
-    return <Loader />;
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
@@ -231,7 +173,6 @@ const Dashboard = () => {
             padding: { xs: 2, sm: 3 },
             marginBottom: { md: 2 },
             width: "100%",
-
             background: "linear-gradient(135deg, #82ca9d 0%, #4caf50 100%)",
             color: "#fff",
             borderRadius: 2,
@@ -248,7 +189,6 @@ const Dashboard = () => {
             sx={{
               fontSize: { xs: "1rem", sm: "1.25rem" },
               fontWeight: 500,
-
               opacity: 0.9,
             }}
           >
@@ -261,7 +201,7 @@ const Dashboard = () => {
               fontWeight: 600,
             }}
           >
-            ৳{totalSales.toFixed(2)}
+            ৳{dashboardData.totalDeliveredSales.toFixed(2)}
           </Typography>
 
           <Box
@@ -278,7 +218,7 @@ const Dashboard = () => {
                 opacity: 0.9,
               }}
             >
-              Manual Order Revenue: ৳{totalManualSales.toFixed(2)}
+              Manual Order Revenue: ৳{dashboardData.totalManualSales.toFixed(2)}
             </Typography>
             <Typography
               variant="body1"
@@ -287,7 +227,7 @@ const Dashboard = () => {
                 opacity: 0.9,
               }}
             >
-              Web Order Revenue: ৳{totalWebSales.toFixed(2)}
+              Web Order Revenue: ৳{dashboardData.totalWebSales.toFixed(2)}
             </Typography>
           </Box>
         </Paper>
@@ -314,7 +254,6 @@ const Dashboard = () => {
             sx={{
               fontSize: { xs: "1rem", sm: "1.25rem" },
               fontWeight: 500,
-
               opacity: 0.9,
             }}
           >
@@ -327,7 +266,7 @@ const Dashboard = () => {
               fontWeight: 600,
             }}
           >
-            {totalOrders}
+            {dashboardData.totalOrders}
           </Typography>
 
           <Box
@@ -344,7 +283,7 @@ const Dashboard = () => {
                 opacity: 0.9,
               }}
             >
-              Manual Order: {totalManualOrders}
+              Manual Order: {dashboardData.manualOrdersCount}
             </Typography>
             <Typography
               variant="body1"
@@ -353,7 +292,7 @@ const Dashboard = () => {
                 opacity: 0.9,
               }}
             >
-              Web Order: {totalWebOrders}
+              Web Order: {dashboardData.webOrdersCount}
             </Typography>
           </Box>
         </Paper>
@@ -380,7 +319,6 @@ const Dashboard = () => {
             sx={{
               fontSize: { xs: "1rem", sm: "1.25rem" },
               fontWeight: 500,
-
               opacity: 0.9,
             }}
           >
@@ -393,7 +331,7 @@ const Dashboard = () => {
               fontWeight: 600,
             }}
           >
-            {totalDeliveredOrdersCount}
+            {dashboardData.deliveredOrdersCount}
           </Typography>
 
           <Box
@@ -410,7 +348,7 @@ const Dashboard = () => {
                 opacity: 0.9,
               }}
             >
-              Manual Order: {deliveredManualOrdersCount}
+              Manual Order: {dashboardData.deliveredManualOrdersCount}
             </Typography>
             <Typography
               variant="body1"
@@ -419,7 +357,7 @@ const Dashboard = () => {
                 opacity: 0.9,
               }}
             >
-              Web Order: {deliveredWebOrdersCount}
+              Web Order: {dashboardData.deliveredWebOrdersCount}
             </Typography>
           </Box>
         </Paper>
@@ -459,48 +397,43 @@ const Dashboard = () => {
                 sx={{
                   fontSize: { xs: "1rem", sm: "1.25rem" },
                   fontWeight: 500,
-
                   opacity: 0.9,
                 }}
               >
                 This Month&apos;s Sales (Delivered)
               </Typography>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontSize: { xs: "1.5rem", sm: "2.125rem" },
-                  fontWeight: 600,
-                }}
-              >
-                ৳{monthlyTotalSales.toFixed(2)}
-              </Typography>
 
-              <Box
-                sx={{
-                  pt: 1,
-                  mt: 1,
-                  borderTop: "1px solid rgba(255,255,255,0.1)",
-                }}
-              >
+              {currentMonth ? (
+                <>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      fontSize: { xs: "1.5rem", sm: "2.125rem" },
+                      fontWeight: 600,
+                    }}
+                  >
+                    ৳{currentMonth.revenue.toFixed(2)}
+                  </Typography>
+
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      fontSize: { xs: "0.9rem", sm: "1rem" },
+                      opacity: 0.8,
+                    }}
+                  >
+                    Manual: ৳{currentMonth.manualSales.toFixed(2)} <br /> Web: ৳
+                    {currentMonth.webSales.toFixed(2)}
+                  </Typography>
+                </>
+              ) : (
                 <Typography
-                  variant="body1"
-                  sx={{
-                    fontSize: { xs: "0.9rem", sm: "1rem" },
-                    opacity: 0.9,
-                  }}
+                  variant="body2"
+                  sx={{ fontSize: { xs: "0.9rem", sm: "1rem" }, opacity: 0.7 }}
                 >
-                  Manual Order Revenue: ৳{manualMonthlyTotalSales.toFixed(2)}
+                  No sales data available
                 </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    fontSize: { xs: "0.9rem", sm: "1rem" },
-                    opacity: 0.9,
-                  }}
-                >
-                  Web Order Revenue: ৳{webMonthlyTotalSales.toFixed(2)}
-                </Typography>
-              </Box>
+              )}
             </Paper>
 
             <Paper
@@ -523,7 +456,6 @@ const Dashboard = () => {
                 sx={{
                   fontSize: { xs: "1rem", sm: "1.25rem" },
                   fontWeight: 500,
-
                   opacity: 0.9,
                 }}
               >
@@ -536,10 +468,7 @@ const Dashboard = () => {
                   fontWeight: 600,
                 }}
               >
-                {deliveredOrders.length}{" "}
-                <span className="font-semibold text-sm sm:text-lg">
-                  ( BDT {countTotalRevenue(deliveredOrders)} )
-                </span>
+                {dashboardData.deliveredOrdersCount}
               </Typography>
 
               <Box
@@ -556,10 +485,7 @@ const Dashboard = () => {
                     opacity: 0.9,
                   }}
                 >
-                  Manual Order: {manualOrder.length}{" "}
-                  <span className="font-semibold">
-                    BDT {countTotalRevenue(manualOrder)}
-                  </span>
+                  Manual Order: {dashboardData.deliveredManualOrdersCount}
                 </Typography>
                 <Typography
                   variant="body1"
@@ -568,10 +494,7 @@ const Dashboard = () => {
                     opacity: 0.9,
                   }}
                 >
-                  Web Order: {webOrder.length}{" "}
-                  <span className="font-semibold ">
-                    BDT {countTotalRevenue(webOrder)}
-                  </span>
+                  Web Order: {dashboardData.deliveredWebOrdersCount}
                 </Typography>
               </Box>
             </Paper>
@@ -596,7 +519,6 @@ const Dashboard = () => {
                 sx={{
                   fontSize: { xs: "1rem", sm: "1.25rem" },
                   fontWeight: 500,
-
                   opacity: 0.9,
                 }}
               >
@@ -609,7 +531,7 @@ const Dashboard = () => {
                   fontWeight: 600,
                 }}
               >
-                {totalPendingOrders}
+                {dashboardData.pendingOrdersCount}
               </Typography>
 
               <Box
@@ -626,7 +548,7 @@ const Dashboard = () => {
                     opacity: 0.9,
                   }}
                 >
-                  Manual Order: {totalAllManualPendingOrders}
+                  Manual Order: {dashboardData.manualPendingOrdersCount}
                 </Typography>
                 <Typography
                   variant="body1"
@@ -635,7 +557,7 @@ const Dashboard = () => {
                     opacity: 0.9,
                   }}
                 >
-                  Web Order: {totalAllWebPendingOrders}
+                  Web Order: {dashboardData.webPendingOrdersCount}
                 </Typography>
               </Box>
             </Paper>
@@ -660,7 +582,6 @@ const Dashboard = () => {
                 sx={{
                   fontSize: { xs: "1rem", sm: "1.25rem" },
                   fontWeight: 500,
-
                   opacity: 0.9,
                 }}
               >
@@ -673,7 +594,7 @@ const Dashboard = () => {
                   fontWeight: 600,
                 }}
               >
-                {totalShippedOrders}
+                {dashboardData.shippedOrdersCount}
               </Typography>
 
               <Box
@@ -690,7 +611,7 @@ const Dashboard = () => {
                     opacity: 0.9,
                   }}
                 >
-                  Manual Order: {totalAllManualShippedOrders}
+                  Manual Order: {dashboardData.manualShippedOrdersCount}
                 </Typography>
                 <Typography
                   variant="body1"
@@ -699,7 +620,7 @@ const Dashboard = () => {
                     opacity: 0.9,
                   }}
                 >
-                  Web Order: {totalAllWebShippedOrders}
+                  Web Order: {dashboardData.webShippedOrdersCount}
                 </Typography>
               </Box>
             </Paper>
@@ -724,7 +645,6 @@ const Dashboard = () => {
                 sx={{
                   fontSize: { xs: "1rem", sm: "1.25rem" },
                   fontWeight: 500,
-
                   opacity: 0.9,
                 }}
               >
@@ -737,7 +657,7 @@ const Dashboard = () => {
                   fontWeight: 600,
                 }}
               >
-                {totalReturnedOrders}
+                {dashboardData.returnedOrdersCount}
               </Typography>
 
               <Box
@@ -754,7 +674,7 @@ const Dashboard = () => {
                     opacity: 0.9,
                   }}
                 >
-                  Manual Order: {totalAllManualReturnedOrders}
+                  Manual Order: {dashboardData.manualReturnedOrdersCount}
                 </Typography>
                 <Typography
                   variant="body1"
@@ -763,7 +683,7 @@ const Dashboard = () => {
                     opacity: 0.9,
                   }}
                 >
-                  Web Order: {totalAllWebReturnedOrders}
+                  Web Order: {dashboardData.webReturnedOrdersCount}
                 </Typography>
               </Box>
             </Paper>
@@ -794,25 +714,49 @@ const Dashboard = () => {
                 <thead>
                   <tr className="bg-blue-50">
                     <th className="border px-4 py-2 text-left">Month</th>
-                    <th className="border px-4 py-2 text-right">Revenue (৳)</th>
+                    <th className="border px-4 py-2 text-right">
+                      Total Revenue (৳)
+                    </th>
+                    <th className="border px-4 py-2 text-right">
+                      Manual Sales (৳)
+                    </th>
+                    <th className="border px-4 py-2 text-right">
+                      Web Sales (৳)
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.values(revenueByMonth)
-                    .sort((a, b) => {
-                      // Sort by date (newest first)
-                      const dateA = new Date(a.month);
-                      const dateB = new Date(b.month);
-                      return dateB - dateA;
-                    })
-                    .map((data) => (
-                      <tr key={data.month} className="hover:bg-gray-50">
-                        <td className="border px-4 py-2">{data.month}</td>
-                        <td className="border px-4 py-2 text-right">
-                          {data.revenue.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
+                  {Object.values(dashboardData.revenueByMonth).length > 0 ? (
+                    Object.values(dashboardData.revenueByMonth)
+                      .sort((a, b) => {
+                        const dateA = new Date(a.month);
+                        const dateB = new Date(b.month);
+                        return dateB - dateA;
+                      })
+                      .map((data) => (
+                        <tr key={data.month} className="hover:bg-gray-50">
+                          <td className="border px-4 py-2">{data.month}</td>
+                          <td className="border px-4 py-2 text-right">
+                            {data.revenue.toFixed(2)}
+                          </td>
+                          <td className="border px-4 py-2 text-right">
+                            {data.manualSales.toFixed(2)}
+                          </td>
+                          <td className="border px-4 py-2 text-right">
+                            {data.webSales.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="4"
+                        className="border px-4 py-2 text-center text-gray-500"
+                      >
+                        No revenue data available
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

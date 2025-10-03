@@ -3,90 +3,249 @@ import { NextResponse } from "next/server";
 
 export const GET = async (req) => {
     const db = await connectDB();
-    const ordersCollection = db.collection('orders');
+    const ordersCollection = db.collection("orders");
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page'));
-    const limit = parseInt(searchParams.get('limit'));
-    const type = (searchParams.get('type'));
+    const page = parseInt(searchParams.get("page")) || 1;
+    const limit = parseInt(searchParams.get("limit")) || 10;
+    const type = searchParams.get("type");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
-    console.log(startDate, endDate);
+
     const skip = (page - 1) * limit;
+
     try {
-        // Fetch paginated orders from the collection
-        let query = {};
-        const allOrdersCount = await ordersCollection.countDocuments(query);
-        const manualOrdersCount = await ordersCollection.countDocuments({ type: "manual" });
-        const webOrdersCount = await ordersCollection.countDocuments({ type: { $exists: false } });
-
-        const deliveredOrders = await ordersCollection.find({ status: "delivered" }).toArray();
-
-        const webOrder = deliveredOrders.filter((order) => !order.type);
-        const deliveredWebOrdersCount = webOrder.length;
-        const manualOrder = deliveredOrders.filter((order) => order.type === "manual");
-        const deliveredManualOrdersCount = manualOrder.length;
-        // Calculate total delivered sales for web orders
-        const totalWebSales = webOrder.reduce((sum, order) => {
-            return sum + (order?.total_revenue ? order.total_revenue : order?.total);
-        }, 0);
-        // Calculate total delivered sales for manual orders
-        const totalManualSales = manualOrder.reduce((sum, order) => {
-            return sum + (order?.total_revenue ? order.total_revenue : order?.total);
-        }, 0);
-        // Calculate total delivered sales
-        const totalDeliveredSales = deliveredOrders.reduce((sum, order) => {
-            return sum + (order?.total_revenue ? order.total_revenue : order?.total);
-        }, 0);
-
-
-        if (type === "manual") {
-            query.type = type;
-        } else if (type === "web") {
-            query.type = { $exists: false }
-        }
-
-
-        // Add date range filter if provided
+        // Build date range query
+        let dateQuery = {};
         if (startDate || endDate) {
-            query.createdAt = {};
+            dateQuery.createdAt = {};
             if (startDate) {
-
-                // Set start date to beginning of day
                 const startDateTime = new Date(startDate);
                 startDateTime.setHours(0, 0, 0, 0);
-                query.createdAt.$gte = startDateTime;
-
+                dateQuery.createdAt.$gte = startDateTime;
             }
             if (endDate) {
-                // Set end date to end of day
                 const endDateTime = new Date(endDate);
                 endDateTime.setHours(23, 59, 59, 999);
-                query.createdAt.$lte = endDateTime;
+                dateQuery.createdAt.$lte = endDateTime;
             }
         }
 
-        const orders = await ordersCollection.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+        // Build pagination query
+        let paginationQuery = { ...dateQuery };
+        if (type === "manual") {
+            paginationQuery.type = type;
+        } else if (type === "web") {
+            paginationQuery.type = { $exists: false };
+        }
 
-        // Get total orders count for pagination
-        const totalOrders = await ordersCollection.countDocuments(query);
-        const totalPages = Math.ceil(totalOrders / limit);
+        // Aggregate all statistics in parallel
+        const [
+            allOrdersCount,
+            manualOrdersCount,
+            webOrdersCount,
+
+            deliveredOrdersCount,
+            pendingOrdersCount,
+            shippedOrdersCount,
+            returnedOrdersCount,
+            exchangeOrdersCount,
+            confirmedOrdersCount,
+
+            manualDeliveredCount,
+            manualPendingCount,
+            manualShippedCount,
+            manualReturnedCount,
+            manualExchangeCount,
+            manualConfirmedCount,
+
+            webDeliveredCount,
+            webPendingCount,
+            webShippedCount,
+            webReturnedCount,
+            webExchangeCount,
+            webConfirmedCount,
+
+            deliveredSalesAgg,
+            monthlyRevenueAgg,
+
+            paginatedOrders,
+            totalPaginatedCount,
+        ] = await Promise.all([
+            // Total counts (no date filter)
+            ordersCollection.countDocuments({}),
+            ordersCollection.countDocuments({ type: "manual" }),
+            ordersCollection.countDocuments({ type: { $exists: false } }),
+
+            // Status counts in date range
+            ordersCollection.countDocuments({ ...dateQuery, status: "delivered" }),
+            ordersCollection.countDocuments({ ...dateQuery, status: "pending" }),
+            ordersCollection.countDocuments({ ...dateQuery, status: "shipped" }),
+            ordersCollection.countDocuments({ ...dateQuery, status: "returned" }),
+            ordersCollection.countDocuments({ ...dateQuery, status: "exchange" }),
+            ordersCollection.countDocuments({ ...dateQuery, status: "confirmed" }),
+
+            // Manual orders by status in date range
+            ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "delivered" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "pending" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "shipped" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "returned" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "exchange" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "confirmed" }),
+
+            // Web orders by status in date range
+            ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "delivered" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "pending" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "shipped" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "returned" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "exchange" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "confirmed" }),
+
+            // Sales aggregation (total, manual, web)
+            ordersCollection.aggregate([
+                { $match: { status: "delivered" } },
+                {
+                    $group: {
+                        _id: null,
+                        totalSales: { $sum: { $ifNull: ["$total_revenue", "$total"] } },
+                        manualSales: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ["$type", "manual"] },
+                                    { $ifNull: ["$total_revenue", "$total"] },
+                                    0,
+                                ],
+                            },
+                        },
+                        webSales: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: [{ $type: "$type" }, "missing"] },
+                                    { $ifNull: ["$total_revenue", "$total"] },
+                                    0,
+                                ],
+                            },
+                        },
+                    },
+                },
+            ]).toArray(),
+
+            // Monthly revenue aggregation (total, manual, web)
+            ordersCollection.aggregate([
+                { $match: { status: "delivered" } },
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: "$createdAt" },
+                            month: { $month: "$createdAt" },
+                        },
+                        revenue: { $sum: { $ifNull: ["$total_revenue", "$total"] } },
+                        manualSales: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ["$type", "manual"] },
+                                    { $ifNull: ["$total_revenue", "$total"] },
+                                    0,
+                                ],
+                            },
+                        },
+                        webSales: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: [{ $type: "$type" }, "missing"] },
+                                    { $ifNull: ["$total_revenue", "$total"] },
+                                    0,
+                                ],
+                            },
+                        },
+                        month: { $first: "$createdAt" },
+                    },
+                },
+                { $sort: { "_id.year": -1, "_id.month": -1 } },
+            ]).toArray(),
+
+            // Paginated orders
+            ordersCollection.find(paginationQuery)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .toArray(),
+
+            // Total count for pagination
+            ordersCollection.countDocuments(paginationQuery),
+        ]);
+
+        // Extract sales data
+        const salesData = deliveredSalesAgg[0] || { totalSales: 0, manualSales: 0, webSales: 0 };
+
+        // Format month-year labels
+        const formatMonthYear = (date) => {
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const d = new Date(date);
+            return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+        };
+
+        // Format monthly revenue breakdown
+        const revenueByMonth = monthlyRevenueAgg.reduce((acc, item) => {
+            const monthYear = formatMonthYear(item.month);
+            acc[monthYear] = {
+                month: monthYear,
+                revenue: item.revenue,
+                manualSales: item.manualSales,
+                webSales: item.webSales,
+            };
+            return acc;
+        }, {});
+
+        const totalPages = Math.ceil(totalPaginatedCount / limit);
 
         return NextResponse.json({
-            orders,
-            deliveredOrders,
+            // Paginated orders
+            orders: paginatedOrders,
+
+            // Overall counts
             totalOrders: allOrdersCount,
             manualOrdersCount,
             webOrdersCount,
+
+            // Sales totals
+            totalDeliveredSales: salesData.totalSales,
+            totalWebSales: salesData.webSales,
+            totalManualSales: salesData.manualSales,
+
+            // Delivered orders counts
+            deliveredOrdersCount,
+            deliveredManualOrdersCount: manualDeliveredCount,
+            deliveredWebOrdersCount: webDeliveredCount,
+
+            // Status counts
+            pendingOrdersCount,
+            manualPendingOrdersCount: manualPendingCount,
+            webPendingOrdersCount: webPendingCount,
+
+            shippedOrdersCount,
+            manualShippedOrdersCount: manualShippedCount,
+            webShippedOrdersCount: webShippedCount,
+
+            returnedOrdersCount,
+            manualReturnedOrdersCount: manualReturnedCount,
+            webReturnedOrdersCount: webReturnedCount,
+
+            exchangeOrdersCount,
+            manualExchangeOrdersCount: manualExchangeCount,
+            webExchangeOrdersCount: webExchangeCount,
+
+            confirmedOrdersCount,
+            manualConfirmedOrdersCount: manualConfirmedCount,
+            webConfirmedOrdersCount: webConfirmedCount,
+
+            // Monthly revenue data (with manual + web breakdown)
+            revenueByMonth,
+
+            // Pagination
             totalPages,
             currentPage: page,
-            totalDeliveredSales,
-            totalWebSales,
-            totalManualSales,
-            deliveredWebOrdersCount,
-            deliveredManualOrdersCount
         });
-
     } catch (error) {
         console.error("Error fetching orders:", error);
         return NextResponse.json(

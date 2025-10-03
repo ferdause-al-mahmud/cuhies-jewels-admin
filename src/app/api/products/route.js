@@ -8,17 +8,21 @@ export async function GET(req) {
     const productsCollection = db.collection("products");
 
     const { searchParams } = new URL(req.url);
-    const name = searchParams.get("name");
+    const searchText = searchParams.get("name");
 
     try {
-        // If a name is provided, search products by name
+        // If a searchText is provided, search products by name and id
         let sortOption = { createdAt: -1 }
         let query = {};
-        if (name) {
+        if (searchText) {
             query = {
-                name: { $regex: new RegExp(name, "i") }, // Case-insensitive search
-            };
+                $or: [
+                    { name: { $regex: new RegExp(searchText, "i") } },
+                    { id: { $regex: new RegExp(searchText, "i") } }
+                ]
+            }
         }
+        console.log(query)
 
         // Fetch matching products
         const products = await productsCollection.find(query).sort(sortOption).toArray();

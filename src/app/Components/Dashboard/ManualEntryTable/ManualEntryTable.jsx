@@ -13,6 +13,7 @@ import {
   Select,
   MenuItem,
   TextField,
+  Autocomplete,
 } from "@mui/material";
 import { Pagination } from "@mui/material";
 import { useState, useEffect, useCallback } from "react";
@@ -30,6 +31,72 @@ import SearchField from "../../ManualOrderComponents/SearchField";
 import { modalStyle } from "@/app/const/modalStyle";
 import { auth } from "@/app/firebase/firebase.config";
 import { FaFacebook, FaGlobe, FaInstagram, FaWhatsapp } from "react-icons/fa";
+const zillas = [
+  "Bagerhat",
+  "Bandarban",
+  "Barguna",
+  "Barisal",
+  "Bhola",
+  "Bogura",
+  "Brahmanbaria",
+  "Chandpur",
+  "Chapai Nawabganj",
+  "Chattogram",
+  "Chuadanga",
+  "Cox's Bazar",
+  "Cumilla",
+  "Dhaka",
+  "Dinajpur",
+  "Faridpur",
+  "Feni",
+  "Gaibandha",
+  "Gazipur",
+  "Gopalganj",
+  "Habiganj",
+  "Jamalpur",
+  "Jashore",
+  "Jhalokati",
+  "Jhenaidah",
+  "Joypurhat",
+  "Khagrachhari",
+  "Khulna",
+  "Kishoreganj",
+  "Kurigram",
+  "Kushtia",
+  "Lakshmipur",
+  "Lalmonirhat",
+  "Madaripur",
+  "Magura",
+  "Manikganj",
+  "Meherpur",
+  "Moulvibazar",
+  "Munshiganj",
+  "Mymensingh",
+  "Naogaon",
+  "Narail",
+  "Narayanganj",
+  "Narsingdi",
+  "Natore",
+  "Netrokona",
+  "Nilphamari",
+  "Noakhali",
+  "Pabna",
+  "Panchagarh",
+  "Patuakhali",
+  "Pirojpur",
+  "Rajbari",
+  "Rajshahi",
+  "Rangamati",
+  "Rangpur",
+  "Satkhira",
+  "Shariatpur",
+  "Sherpur",
+  "Sirajganj",
+  "Sunamganj",
+  "Sylhet",
+  "Tangail",
+  "Thakurgaon",
+];
 
 const ManualEntryTable = ({
   orders,
@@ -992,9 +1059,6 @@ const ManualEntryTable = ({
     }
   };
 
-  console.log(addedProducts);
-  console.log(newOrderData?.cart);
-
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 4 }}>
@@ -1387,16 +1451,26 @@ const ManualEntryTable = ({
                   margin="normal"
                 />
 
-                <TextField
-                  label="Zilla"
-                  fullWidth
-                  value={newOrderData.formData.zilla}
-                  onChange={(e) =>
-                    handleNewOrderFormChange("address", {
-                      zilla: e.target.value,
-                    })
+                <Autocomplete
+                  freeSolo
+                  options={zillas}
+                  value={newOrderData.formData.zilla || ""}
+                  onChange={(e, newValue) =>
+                    handleNewOrderFormChange("address", { zilla: newValue })
                   }
-                  margin="normal"
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Zilla"
+                      fullWidth
+                      margin="normal"
+                      onChange={(e) =>
+                        handleNewOrderFormChange("address", {
+                          zilla: e.target.value,
+                        })
+                      }
+                    />
+                  )}
                 />
 
                 <TextField
