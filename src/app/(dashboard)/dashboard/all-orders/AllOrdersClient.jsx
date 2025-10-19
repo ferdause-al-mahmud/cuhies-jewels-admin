@@ -25,7 +25,7 @@ const AllOrdersClient = ({ searchParams }) => {
         type: searchParams?.type || "",
         startDate: searchParams?.startDate || "",
         endDate: searchParams?.endDate || "",
-        phone: searchParams?.phone || "",
+        search: searchParams?.search || "",
       });
 
       const res = await fetch(`/api/orders?${queryParams.toString()}`, {

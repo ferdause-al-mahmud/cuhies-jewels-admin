@@ -69,7 +69,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
   const statusFilter = searchParams.get("status") || "all";
   const [products, setProducts] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [phoneInput, setPhoneInput] = useState("");
+  const [searchInput, setSearchInput] = useState("");
 
   // Edit order modal states
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -696,14 +696,15 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
     router.refresh();
   };
 
-  const handleNumberSearch = (phone) => {
+  const handleSearch = (searchValue) => {
     const query = new URLSearchParams();
-    query.set("page", "1"); // Reset to first page when changing type
+    query.set("page", "1"); // Reset pagination
+
     if (orderType) {
       query.set("type", orderType);
     }
-    if (phone) {
-      query.set("phone", phone);
+    if (searchValue) {
+      query.set("search", searchValue);
     }
 
     router.push(`/dashboard/all-orders?${query.toString()}`);
@@ -1592,16 +1593,17 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
       {/* Search Input for Customer Phone Number */}
       <Box mb={3} display="flex" alignItems="center" gap={2}>
         <TextField
-          label="Search by Customer Phone"
+          label="Search by Name, Phone, or Order ID"
           variant="outlined"
-          value={phoneInput}
+          value={searchInput}
           onChange={(e) => {
             const value = e.target.value;
-            setPhoneInput(value);
-            handleNumberSearch(value);
+            setSearchInput(value);
+            handleSearch(value);
           }}
           sx={{ width: "100%", maxWidth: 300 }}
         />
+
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
