@@ -1401,11 +1401,20 @@ const ManualEntryTable = ({
                   fullWidth
                   required
                   value={newOrderData.formData.phone}
-                  onChange={(e) =>
-                    handleNewOrderFormChange("phone", e.target.value)
-                  }
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, ""); // remove non-numeric
+                    if (value.length <= 11) {
+                      handleNewOrderFormChange("phone", value);
+                    }
+                  }}
+                  inputProps={{
+                    maxLength: 11,
+                    inputMode: "numeric",
+                    pattern: "[0-9]*",
+                  }}
                   margin="normal"
                 />
+
                 <TextField
                   label="Email"
                   fullWidth

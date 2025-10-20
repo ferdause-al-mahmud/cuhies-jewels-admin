@@ -142,6 +142,11 @@ const EditOrderModal = ({
                   onChange={handlePhoneChange}
                   variant="outlined"
                   margin="normal"
+                  inputProps={{
+                    maxLength: 11,
+                    inputMode: "numeric",
+                    pattern: "[0-9]*",
+                  }}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
