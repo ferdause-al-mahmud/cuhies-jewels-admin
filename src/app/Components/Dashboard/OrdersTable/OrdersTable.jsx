@@ -714,7 +714,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
     setOrderType(type);
     const query = new URLSearchParams();
     query.set("page", "1"); // Reset to first page when changing type
-    setPhoneInput(""); // ✅ clear phone input
+    setSearchInput(""); // ✅ clear phone input
 
     if (type === "manual" || type === "web") {
       query.set("type", type);

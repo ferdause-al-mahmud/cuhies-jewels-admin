@@ -529,6 +529,7 @@ const EditOrderModal = ({
                             onChange={(e) =>
                               handleItemQuantityChange(index, e.target.value)
                             }
+                            onWheel={(e) => e.target.blur()}
                           />
                         </Grid>
 
@@ -549,6 +550,7 @@ const EditOrderModal = ({
                             onChange={(e) =>
                               handleItemPriceChange(index, e.target.value)
                             }
+                            onWheel={(e) => e.target.blur()}
                           />
                         </Grid>
 
