@@ -1180,13 +1180,15 @@ const ManualEntryTable = ({
                             ? "bg-blue-300"
                             : order?.status === "delivered"
                             ? "bg-green-400"
-                            : order?.status === "confirmed"
-                            ? "bg-purple-600 !text-white"
                             : order?.status === "exchange"
                             ? "bg-orange-400"
+                            : order?.status === "confirmed"
+                            ? "bg-purple-600 !text-white"
                             : order?.status === "returned"
                             ? "bg-red-400"
-                            : "bg-transparent" // For other statuses
+                            : order?.status === "refund"
+                            ? "bg-[#AB47BC] !text-white" // ✅ New Refund color
+                            : "bg-transparent" // Default for other statuses
                         }
                         value={updatedOrder[order?.orderID] || order?.status}
                         onChange={(e) =>
@@ -1204,9 +1206,11 @@ const ManualEntryTable = ({
                         <MenuItem value="pending">Pending</MenuItem>
                         <MenuItem value="confirmed">Confirmed</MenuItem>
                         <MenuItem value="shipped">Shipped</MenuItem>
+                        <MenuItem value="exchange">Exchange</MenuItem>
                         <MenuItem value="delivered">Delivered</MenuItem>
                         <MenuItem value="returned">Returned</MenuItem>
-                        <MenuItem value="exchange">Exchange</MenuItem>
+                        <MenuItem value="refund">Refund</MenuItem>{" "}
+                        {/* ✅ Added Refund option */}
                       </Select>
                     </TableCell>
                     <TableCell>{order?.moderatorName ?? "N/A"}</TableCell>
@@ -1626,6 +1630,7 @@ const ManualEntryTable = ({
                   <MenuItem value="delivered">Delivered</MenuItem>
                   <MenuItem value="returned">Returned</MenuItem>
                   <MenuItem value="exchange">Exchange</MenuItem>
+                  <MenuItem value="refund">Refund</MenuItem>
                 </TextField>
 
                 <TextField

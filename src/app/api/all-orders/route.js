@@ -51,6 +51,7 @@ export const GET = async (req) => {
             returnedOrdersCount,
             exchangeOrdersCount,
             confirmedOrdersCount,
+            refundOrdersCount,
 
             manualDeliveredCount,
             manualPendingCount,
@@ -58,6 +59,7 @@ export const GET = async (req) => {
             manualReturnedCount,
             manualExchangeCount,
             manualConfirmedCount,
+            manualRefundCount,
 
             webDeliveredCount,
             webPendingCount,
@@ -65,6 +67,7 @@ export const GET = async (req) => {
             webReturnedCount,
             webExchangeCount,
             webConfirmedCount,
+            webRefundCount,
 
             deliveredSalesAgg,
             monthlyRevenueAgg,
@@ -84,6 +87,7 @@ export const GET = async (req) => {
             ordersCollection.countDocuments({ ...dateQuery, status: "returned" }),
             ordersCollection.countDocuments({ ...dateQuery, status: "exchange" }),
             ordersCollection.countDocuments({ ...dateQuery, status: "confirmed" }),
+            ordersCollection.countDocuments({ ...dateQuery, status: "refund" }),
 
             // Manual orders by status in date range
             ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "delivered" }),
@@ -92,6 +96,7 @@ export const GET = async (req) => {
             ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "returned" }),
             ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "exchange" }),
             ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "confirmed" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "refund" }),
 
             // Web orders by status in date range
             ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "delivered" }),
@@ -100,6 +105,7 @@ export const GET = async (req) => {
             ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "returned" }),
             ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "exchange" }),
             ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "confirmed" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "refund" }),
 
             // Sales aggregation (total, manual, web)
             ordersCollection.aggregate([
@@ -238,6 +244,10 @@ export const GET = async (req) => {
             confirmedOrdersCount,
             manualConfirmedOrdersCount: manualConfirmedCount,
             webConfirmedOrdersCount: webConfirmedCount,
+
+            refundOrdersCount,
+            manualRefundOrdersCount: manualRefundCount,
+            webRefundOrdersCount: webRefundCount,
 
             // Monthly revenue data (with manual + web breakdown)
             revenueByMonth,

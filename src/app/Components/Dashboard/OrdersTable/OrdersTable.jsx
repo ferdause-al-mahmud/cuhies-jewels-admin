@@ -102,6 +102,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
     shipped: 0,
     delivered: 0,
     returned: 0,
+    refund: 0,
   });
 
   // Alternative approach using direct SVG or high-res canvas
@@ -517,6 +518,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
         shipped: data.shippedOrdersCount,
         delivered: data.deliveredOrdersCount,
         returned: data.returnedOrdersCount,
+        refund: data.refundOrdersCount,
       };
 
       // Adjust counts based on orderType filter
@@ -527,6 +529,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
         counts.shipped = data.manualShippedOrdersCount;
         counts.delivered = data.deliveredManualOrdersCount;
         counts.returned = data.manualReturnedOrdersCount;
+        counts.returned = data.manualRefundOrdersCount;
       } else if (orderType === "web") {
         counts.pending = data.webPendingOrdersCount;
         counts.exchange = data.webExchangeOrdersCount;
@@ -534,6 +537,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
         counts.shipped = data.webShippedOrdersCount;
         counts.delivered = data.deliveredWebOrdersCount;
         counts.returned = data.webReturnedOrdersCount;
+        counts.returned = data.webRefundOrdersCount;
       }
 
       setStatusCounts(counts);
@@ -947,7 +951,11 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
 
     // Recalculate total
     const cartTotal = calculateTotal(newCart);
-    const newTotal = cartTotal + editFormData.shippingCost;
+    const newTotal =
+      cartTotal +
+      editFormData.shippingCost -
+      parseInt(editFormData.advancePayment) -
+      parseInt(editFormData.discount);
 
     setEditFormData({
       ...editFormData,
@@ -1042,7 +1050,11 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
       newCart[existingItemIndex].quantity += 1;
 
       const cartTotal = calculateTotal(newCart);
-      const newTotal = cartTotal + editFormData.shippingCost;
+      const newTotal =
+        cartTotal +
+        editFormData.shippingCost -
+        parseInt(editFormData.advancePayment) -
+        parseInt(editFormData.discount);
 
       setEditFormData({
         ...editFormData,
@@ -1063,7 +1075,12 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
 
       const newCart = [...editFormData.cart, newItem];
       const cartTotal = calculateTotal(newCart);
-      const newTotal = cartTotal + editFormData.shippingCost;
+
+      const newTotal =
+        cartTotal +
+        editFormData.shippingCost -
+        parseInt(editFormData.advancePayment) -
+        parseInt(editFormData.discount);
 
       setEditFormData({
         ...editFormData,
@@ -1232,7 +1249,11 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
 
     // Recalculate total with shipping cost
     const cartTotal = calculateTotal(newCart);
-    const newTotal = cartTotal + editFormData.shippingCost;
+    const newTotal =
+      cartTotal +
+      editFormData.shippingCost -
+      parseInt(editFormData.advancePayment) -
+      parseInt(editFormData.discount);
 
     setEditFormData({
       ...editFormData,
@@ -1447,7 +1468,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
             display: "grid",
             gridTemplateColumns: {
               xs: "repeat(3, 1fr)",
-              sm: "repeat(6, auto)",
+              sm: "repeat(7, auto)", // updated to fit the new button
             },
             gap: 1,
             width: "100%",
@@ -1460,6 +1481,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
           >
             All ({statusCounts.all})
           </Button>
+
           <Button
             onClick={() => handleStatusFilter("pending")}
             variant={statusFilter === "pending" ? "contained" : "outlined"}
@@ -1468,6 +1490,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
           >
             Pending ({statusCounts.pending})
           </Button>
+
           <Button
             onClick={() => handleStatusFilter("confirmed")}
             variant={statusFilter === "confirmed" ? "contained" : "outlined"}
@@ -1478,6 +1501,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
           >
             Confirmed ({statusCounts.confirmed})
           </Button>
+
           <Button
             onClick={() => handleStatusFilter("shipped")}
             variant={statusFilter === "shipped" ? "contained" : "outlined"}
@@ -1486,6 +1510,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
           >
             Shipped ({statusCounts.shipped})
           </Button>
+
           <Button
             onClick={() => handleStatusFilter("delivered")}
             variant={statusFilter === "delivered" ? "contained" : "outlined"}
@@ -1496,6 +1521,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
           >
             Delivered ({statusCounts.delivered})
           </Button>
+
           <Button
             onClick={() => handleStatusFilter("exchange")}
             variant={statusFilter === "exchange" ? "contained" : "outlined"}
@@ -1505,8 +1531,9 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
             }}
             fullWidth
           >
-            exchange ({statusCounts.exchange})
+            Exchange ({statusCounts.exchange})
           </Button>
+
           <Button
             onClick={() => handleStatusFilter("returned")}
             variant={statusFilter === "returned" ? "contained" : "outlined"}
@@ -1517,6 +1544,19 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
             fullWidth
           >
             Returned ({statusCounts.returned})
+          </Button>
+
+          {/* New Refund Button */}
+          <Button
+            onClick={() => handleStatusFilter("refund")}
+            variant={statusFilter === "refund" ? "contained" : "outlined"}
+            sx={{
+              bgcolor: statusFilter === "refund" ? "#AB47BC" : "inherit",
+              color: statusFilter === "refund" ? "white" : "inherit",
+            }}
+            fullWidth
+          >
+            Refund ({statusCounts.refund})
           </Button>
         </Box>
       </Box>
@@ -1723,7 +1763,9 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
                             ? "bg-purple-600 !text-white"
                             : order?.status === "returned"
                             ? "bg-red-400"
-                            : "bg-transparent" // For other statuses
+                            : order?.status === "refund"
+                            ? "bg-[#AB47BC] !text-white" // ✅ New Refund color
+                            : "bg-transparent" // Default for other statuses
                         }
                         value={updatedOrder[order?.orderID] || order?.status}
                         onChange={(e) =>
@@ -1744,7 +1786,10 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
                         <MenuItem value="exchange">Exchange</MenuItem>
                         <MenuItem value="delivered">Delivered</MenuItem>
                         <MenuItem value="returned">Returned</MenuItem>
+                        <MenuItem value="refund">Refund</MenuItem>{" "}
+                        {/* ✅ Added Refund option */}
                       </Select>
+
                       <div className="flex items-center justify-center mt-1">
                         {order?.consignment_id ? (
                           <span
