@@ -1537,6 +1537,7 @@ const ManualEntryTable = ({
                 <TextField
                   label="Shipping Cost"
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   fullWidth
                   value={newOrderData.shippingCost}
                   onChange={(e) => {
@@ -1574,6 +1575,7 @@ const ManualEntryTable = ({
                 <TextField
                   label="Advance"
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   fullWidth
                   value={
                     newOrderData.advancePayment === 0
@@ -1636,6 +1638,7 @@ const ManualEntryTable = ({
                 <TextField
                   label="Discount"
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   fullWidth
                   value={
                     newOrderData.discount === 0 ? "" : newOrderData.discount
@@ -1677,6 +1680,7 @@ const ManualEntryTable = ({
                 <TextField
                   label="Total"
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   fullWidth
                   value={newOrderData.total}
                   onChange={(e) =>
@@ -1690,6 +1694,7 @@ const ManualEntryTable = ({
                 <TextField
                   label="Last digits"
                   type="number"
+                  onWheel={(e) => e.target.blur()}
                   fullWidth
                   value={newOrderData.lastDigits}
                   onChange={(e) => {
@@ -1867,6 +1872,7 @@ const ManualEntryTable = ({
                           <TableCell>
                             <TextField
                               type="number"
+                              onWheel={(e) => e.target.blur()}
                               value={item.price}
                               onChange={(e) =>
                                 handleNewItemPriceChange(index, e.target.value)
@@ -1878,6 +1884,7 @@ const ManualEntryTable = ({
                           <TableCell>
                             <TextField
                               type="number"
+                              onWheel={(e) => e.target.blur()}
                               value={item.quantity}
                               onChange={(e) =>
                                 handleNewItemQuantityChange(
