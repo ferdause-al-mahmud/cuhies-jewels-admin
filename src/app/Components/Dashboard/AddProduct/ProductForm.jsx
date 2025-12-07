@@ -89,6 +89,14 @@ const accessoriesCategories = [
   { value: "Bracelete", title: "Bracelete" },
 ];
 
+const cjMenCategories = [
+  { value: "watches", title: "Mens Watches" },
+  { value: "wallets", title: "Mens Wallets" },
+  { value: "mens-bags-and-shoes", title: "Mens Bags and Shoes" },
+  { value: "mens-perfumes", title: "Mens Perfumes" },
+  { value: "apparels", title: "Mens Apparels" },
+];
+
 const ProductForm = () => {
   const [product, setProduct] = useState({
     id: "",
@@ -467,6 +475,7 @@ const ProductForm = () => {
     ...accessoriesCategories,
     { title: "Bags & Shoes", value: "bags-and-shoes" },
     { title: "Perfumes", value: "perfumes" },
+    ...cjMenCategories,
   ];
 
   const handleGlobalMeasurementChange = (sizeIndex, value) => {
