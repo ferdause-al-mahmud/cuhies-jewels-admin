@@ -205,6 +205,40 @@ const ManualEntryTable = ({
     }));
   };
 
+  const checkSoldOut = (product) => {
+    if (!product || !product.variants?.length) return false;
+
+    const parseAvail = (val) => parseInt(val, 10) || 0;
+
+    // Loop through each variant to check if ANY availability > 0
+    const hasStock = product.variants.some((variant) => {
+      switch (product.sizeType) {
+        case "individual":
+          return variant.availableSizes?.some(
+            (s) => parseAvail(s.availability) > 0
+          );
+
+        case "free":
+          return parseAvail(variant.freeSize?.availability) > 0;
+
+        case "none":
+          return parseAvail(variant.noSize?.availability) > 0;
+
+        default:
+          // fallback if unexpected type
+          return (
+            variant.availableSizes?.some(
+              (s) => parseAvail(s.availability) > 0
+            ) ||
+            parseAvail(variant.freeSize?.availability) > 0 ||
+            parseAvail(variant.noSize?.availability) > 0
+          );
+      }
+    });
+
+    return !hasStock; // sold out if NO variant has stock
+  };
+
   const handleSave = async (orderId) => {
     try {
       const updatedStatus = updatedOrder[orderId];
@@ -1725,49 +1759,83 @@ const ManualEntryTable = ({
                 <Paper
                   sx={{ mt: 2, p: 2, maxHeight: "200px", overflow: "auto" }}
                 >
-                  {products.map((product) => (
-                    <Box
-                      key={product.id}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        p: 1,
-                        cursor: "pointer",
-                        "&:hover": { bgcolor: "rgba(0,0,0,0.05)" },
-                        borderBottom: "1px solid #eee",
-                      }}
-                      onClick={() => addProductToNewOrder(product)}
-                    >
-                      {(product.imageUrl && product.imageUrl.length > 0) ||
-                      product?.variants[0]?.images.length > 0 ? (
-                        <Image
-                          src={
-                            product?.imageUrl
-                              ? product?.imageUrl[0]
-                              : product?.variants[0]?.images[0]
-                          }
-                          alt={product.name}
-                          width={40}
-                          height={40}
-                          style={{ marginRight: 10, objectFit: "cover" }}
-                        />
-                      ) : (
-                        <Box
-                          width={40}
-                          height={40}
-                          sx={{ bgcolor: "#f0f0f0", mr: 1 }}
-                        />
-                      )}
-                      <Box>
-                        <Typography variant="subtitle1">
-                          {product.name} - {product.id}
-                        </Typography>
-                        <Typography variant="body2">
-                          Price: ৳{product.offerPrice || product.price}
-                        </Typography>
+                  {products.map((product) => {
+                    const allSoldOut = checkSoldOut(product);
+
+                    return (
+                      <Box
+                        key={product.id}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          position: "relative",
+                          p: 1,
+                          cursor: allSoldOut ? "not-allowed" : "pointer",
+                          opacity: allSoldOut ? 0.6 : 1,
+                          "&:hover": {
+                            bgcolor: allSoldOut
+                              ? "inherit"
+                              : "rgba(0,0,0,0.05)",
+                          },
+                          borderBottom: "1px solid #eee",
+                        }}
+                        onClick={() =>
+                          !allSoldOut && addProductToNewOrder(product)
+                        }
+                      >
+                        {(product.imageUrl && product.imageUrl.length > 0) ||
+                        product?.variants[0]?.images.length > 0 ? (
+                          <Image
+                            src={
+                              product?.imageUrl
+                                ? product?.imageUrl[0]
+                                : product?.variants[0]?.images[0]
+                            }
+                            alt={product.name}
+                            width={40}
+                            height={40}
+                            style={{ marginRight: 10, objectFit: "cover" }}
+                          />
+                        ) : (
+                          <Box
+                            width={40}
+                            height={40}
+                            sx={{ bgcolor: "#f0f0f0", mr: 1 }}
+                          />
+                        )}
+
+                        {/* Small badge */}
+                        {allSoldOut && (
+                          <Typography
+                            sx={{
+                              position: "absolute",
+                              top: 6,
+                              right: 6,
+                              bgcolor: "error.main",
+                              color: "white",
+                              px: 1,
+                              py: "2px",
+                              fontSize: "10px",
+                              borderRadius: "4px",
+                              textTransform: "uppercase",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Out of Stock
+                          </Typography>
+                        )}
+
+                        <Box>
+                          <Typography variant="subtitle1">
+                            {product.name} - {product.id}
+                          </Typography>
+                          <Typography variant="body2">
+                            Price: ৳{product.offerPrice || product.price}
+                          </Typography>
+                        </Box>
                       </Box>
-                    </Box>
-                  ))}
+                    );
+                  })}
                 </Paper>
               )}
 

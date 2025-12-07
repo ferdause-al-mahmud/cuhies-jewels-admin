@@ -25,7 +25,7 @@ export async function GET(req) {
         console.log(query)
 
         // Fetch matching products
-        const products = await productsCollection.find(query).sort(sortOption).toArray();
+        const products = await productsCollection.find(query).sort(sortOption).limit(20).toArray();
 
         return NextResponse.json({ orders: products });
     } catch (error) {
