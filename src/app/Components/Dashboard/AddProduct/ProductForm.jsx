@@ -896,16 +896,19 @@ const ProductForm = () => {
                   <label className="block font-bold mb-1">Color Code</label>
                   <input
                     type="text"
-                    value={variant.colorCode}
-                    onChange={(e) =>
-                      handleVariantChange(
-                        variantIndex,
-                        "colorCode",
-                        e.target.value
-                      )
-                    }
+                    value={variant.colorCode || "#"}
+                    onChange={(e) => {
+                      let val = e.target.value;
+
+                      // if the user removes the #, add it back
+                      if (!val.startsWith("#")) {
+                        val = "#" + val;
+                      }
+
+                      handleVariantChange(variantIndex, "colorCode", val);
+                    }}
                     className="border p-2 w-full rounded bg-white"
-                    placeholder="#FFFFFF"
+                    placeholder="#"
                   />
                 </div>
                 <div>

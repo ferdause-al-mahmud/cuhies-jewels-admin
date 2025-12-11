@@ -15,7 +15,7 @@ export async function copyOrderSlip(orderID) {
         text += `Products:\n`;
         data.cart.forEach((item, i) => {
             text += `${i + 1}. ${item.name}\n`;
-            text += `   Variant: ${item.variantId} ${item.selectedSize ? `, Size: ${item.selectedSize}` : ""},Quantity: ${item.quantity}\n`;
+            text += `   Variant: ${item.variant.name} ${item.selectedSize ? `, Size: ${item.selectedSize}` : ""},Quantity: ${item.quantity}\n`;
 
             // text += `   Quantity: ${item.quantity}\n`;
             // text += `   Price: ${item.price * item.quantity}\n`;

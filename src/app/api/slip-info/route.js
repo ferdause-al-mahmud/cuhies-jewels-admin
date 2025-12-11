@@ -44,6 +44,7 @@ export const GET = async (req) => {
             cart: order.cart.map((item) => ({
                 name: item.name,
                 variantId: item.variantId,
+                variant: item.variant,
                 quantity: item.quantity,
                 selectedSize: item.selectedSize || null,
                 price: item.price,

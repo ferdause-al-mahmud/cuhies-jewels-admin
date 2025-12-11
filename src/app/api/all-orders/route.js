@@ -52,6 +52,7 @@ export const GET = async (req) => {
             exchangeOrdersCount,
             confirmedOrdersCount,
             refundOrdersCount,
+            failedOrdersCount,
 
             manualDeliveredCount,
             manualPendingCount,
@@ -60,6 +61,7 @@ export const GET = async (req) => {
             manualExchangeCount,
             manualConfirmedCount,
             manualRefundCount,
+            manualFailedCount,
 
             webDeliveredCount,
             webPendingCount,
@@ -68,6 +70,7 @@ export const GET = async (req) => {
             webExchangeCount,
             webConfirmedCount,
             webRefundCount,
+            webFailedCount,
 
             deliveredSalesAgg,
             monthlyRevenueAgg,
@@ -88,6 +91,7 @@ export const GET = async (req) => {
             ordersCollection.countDocuments({ ...dateQuery, status: "exchange" }),
             ordersCollection.countDocuments({ ...dateQuery, status: "confirmed" }),
             ordersCollection.countDocuments({ ...dateQuery, status: "refund" }),
+            ordersCollection.countDocuments({ ...dateQuery, status: "payment_failed" }),
 
             // Manual orders by status in date range
             ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "delivered" }),
@@ -97,6 +101,7 @@ export const GET = async (req) => {
             ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "exchange" }),
             ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "confirmed" }),
             ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "refund" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: "manual", status: "payment_failed" }),
 
             // Web orders by status in date range
             ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "delivered" }),
@@ -106,6 +111,7 @@ export const GET = async (req) => {
             ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "exchange" }),
             ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "confirmed" }),
             ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "refund" }),
+            ordersCollection.countDocuments({ ...dateQuery, type: { $exists: false }, status: "payment_failed" }),
 
             // Sales aggregation (total, manual, web)
             ordersCollection.aggregate([
@@ -113,12 +119,12 @@ export const GET = async (req) => {
                 {
                     $group: {
                         _id: null,
-                        totalSales: { $sum: { $ifNull: ["$total_revenue", "$total"] } },
+                        totalSales: { $sum: { $ifNull: ["$total", "$total"] } },
                         manualSales: {
                             $sum: {
                                 $cond: [
                                     { $eq: ["$type", "manual"] },
-                                    { $ifNull: ["$total_revenue", "$total"] },
+                                    { $ifNull: ["$total", "$total"] },
                                     0,
                                 ],
                             },
@@ -127,7 +133,7 @@ export const GET = async (req) => {
                             $sum: {
                                 $cond: [
                                     { $eq: [{ $type: "$type" }, "missing"] },
-                                    { $ifNull: ["$total_revenue", "$total"] },
+                                    { $ifNull: ["$total", "$total"] },
                                     0,
                                 ],
                             },
@@ -145,12 +151,12 @@ export const GET = async (req) => {
                             year: { $year: "$createdAt" },
                             month: { $month: "$createdAt" },
                         },
-                        revenue: { $sum: { $ifNull: ["$total_revenue", "$total"] } },
+                        revenue: { $sum: { $ifNull: ["$total", "$total"] } },
                         manualSales: {
                             $sum: {
                                 $cond: [
                                     { $eq: ["$type", "manual"] },
-                                    { $ifNull: ["$total_revenue", "$total"] },
+                                    { $ifNull: ["$total", "$total"] },
                                     0,
                                 ],
                             },
@@ -159,7 +165,7 @@ export const GET = async (req) => {
                             $sum: {
                                 $cond: [
                                     { $eq: [{ $type: "$type" }, "missing"] },
-                                    { $ifNull: ["$total_revenue", "$total"] },
+                                    { $ifNull: ["$total", "$total"] },
                                     0,
                                 ],
                             },
@@ -248,6 +254,10 @@ export const GET = async (req) => {
             refundOrdersCount,
             manualRefundOrdersCount: manualRefundCount,
             webRefundOrdersCount: webRefundCount,
+
+            failedOrdersCount,
+            manualFailedOrdersCount: manualFailedCount,
+            webFailedOrdersCount: webFailedCount,
 
             // Monthly revenue data (with manual + web breakdown)
             revenueByMonth,

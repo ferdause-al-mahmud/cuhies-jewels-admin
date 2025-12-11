@@ -42,6 +42,7 @@ import cjIconUrl from "../../../../assets/cj1.png";
 import qrImageUrl from "../../../../assets/cj2.png";
 import fragilesUrl from "../../../../assets/cj3.png";
 import logoUrl from "../../../../assets/cj4.png";
+import webLogo from "../../../../assets/web.png";
 const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
   const [orderStatuses, setOrderStatuses] = useState({});
   const cacheRef = useRef(new Map()); // id -> status
@@ -103,6 +104,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
     delivered: 0,
     returned: 0,
     refund: 0,
+    failed: 0,
   });
 
   // Alternative approach using direct SVG or high-res canvas
@@ -519,6 +521,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
         delivered: data.deliveredOrdersCount,
         returned: data.returnedOrdersCount,
         refund: data.refundOrdersCount,
+        failed: data.failedOrdersCount,
       };
 
       // Adjust counts based on orderType filter
@@ -530,6 +533,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
         counts.delivered = data.deliveredManualOrdersCount;
         counts.returned = data.manualReturnedOrdersCount;
         counts.returned = data.manualRefundOrdersCount;
+        counts.returned = data.manualFailedOrdersCount;
       } else if (orderType === "web") {
         counts.pending = data.webPendingOrdersCount;
         counts.exchange = data.webExchangeOrdersCount;
@@ -537,7 +541,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
         counts.shipped = data.webShippedOrdersCount;
         counts.delivered = data.deliveredWebOrdersCount;
         counts.returned = data.webReturnedOrdersCount;
-        counts.returned = data.webRefundOrdersCount;
+        counts.returned = data.webFailedOrdersCount;
       }
 
       setStatusCounts(counts);
@@ -1558,6 +1562,21 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
           >
             Refund ({statusCounts.refund})
           </Button>
+          {/* New Failed order Button */}
+          <Button
+            onClick={() => handleStatusFilter("payment_failed")}
+            variant={
+              statusFilter === "payment_failed" ? "contained" : "outlined"
+            }
+            sx={{
+              bgcolor:
+                statusFilter === "payment_failed" ? "#AB47BC" : "inherit",
+              color: statusFilter === "payment_failed" ? "white" : "inherit",
+            }}
+            fullWidth
+          >
+            Failed ({statusCounts.failed})
+          </Button>
         </Box>
       </Box>
 
@@ -1718,7 +1737,12 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
                         ) : order?.orderFrom === "insta" ? (
                           <FaInstagram color="#E1306C" size={30} />
                         ) : (
-                          <FaGlobe color="#4285F4" size={30} />
+                          <Image
+                            src={webLogo}
+                            width={30}
+                            height={30}
+                            alt="Logo"
+                          />
                         )}
                       </h1>{" "}
                       {order.orderID}
@@ -1764,8 +1788,10 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
                             : order?.status === "returned"
                             ? "bg-red-400"
                             : order?.status === "refund"
-                            ? "bg-[#AB47BC] !text-white" // ✅ New Refund color
-                            : "bg-transparent" // Default for other statuses
+                            ? "bg-[#AB47BC] !text-white"
+                            : order?.status === "payment_failed"
+                            ? "bg-red-600 !text-white" // ✅ Added payment_failed color
+                            : "bg-transparent"
                         }
                         value={updatedOrder[order?.orderID] || order?.status}
                         onChange={(e) =>
@@ -1786,27 +1812,37 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
                         <MenuItem value="exchange">Exchange</MenuItem>
                         <MenuItem value="delivered">Delivered</MenuItem>
                         <MenuItem value="returned">Returned</MenuItem>
-                        <MenuItem value="refund">Refund</MenuItem>{" "}
-                        {/* ✅ Added Refund option */}
+                        <MenuItem value="refund">Refund</MenuItem>
+                        {/* The item below must be the last valid child, no spaces or comments after it */}
+                        <MenuItem value="payment_failed">
+                          Payment Failed
+                        </MenuItem>
                       </Select>
 
                       <div className="flex items-center justify-center mt-1">
                         {order?.consignment_id ? (
                           <span
                             className={`px-3 py-1 rounded-full text-sm font-semibold capitalize text-center
-                    ${
-                      orderStatuses[order.consignment_id] === "Delivered"
-                        ? "bg-green-100 text-green-700"
-                        : orderStatuses[order.consignment_id] === "Pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : order?.status === "exchange"
-                        ? "bg-orange-400"
-                        : orderStatuses[order.consignment_id] === "Return"
-                        ? "bg-red-100 text-red-700"
-                        : orderStatuses[order.consignment_id] === "Paid Return"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
+                              ${
+                                orderStatuses[order.consignment_id] ===
+                                "Delivered"
+                                  ? "bg-green-100 text-green-700"
+                                  : orderStatuses[order.consignment_id] ===
+                                    "Pending"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : order?.status === "exchange"
+                                  ? "bg-orange-400"
+                                  : orderStatuses[order.consignment_id] ===
+                                    "Return"
+                                  ? "bg-red-100 text-red-700"
+                                  : orderStatuses[order.consignment_id] ===
+                                    "Paid Return"
+                                  ? "bg-red-100 text-red-700"
+                                  : orderStatuses[order.consignment_id] ===
+                                    "Payment Failed"
+                                  ? "bg-red-600 text-white" // ✅ Added badge for payment_failed
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
                           >
                             {orderStatuses[order.consignment_id] ||
                               "Loading..."}
@@ -1815,6 +1851,7 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
                           "-"
                         )}
                       </div>
+
                       <SuccessRateModal phoneNumber={order?.formData?.phone} />
                     </TableCell>
 

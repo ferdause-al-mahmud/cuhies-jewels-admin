@@ -1440,16 +1440,26 @@ const ManualEntryTable = ({
                   required
                   value={newOrderData.formData.phone}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, ""); // remove non-numeric
-                    if (value.length <= 11) {
-                      handleNewOrderFormChange("phone", value);
+                    const digits = e.target.value.replace(/\D/g, "");
+                    if (digits.length <= 11) {
+                      handleNewOrderFormChange("phone", digits);
                     }
                   }}
                   inputProps={{
+                    minLength: 11,
                     maxLength: 11,
                     inputMode: "numeric",
                     pattern: "[0-9]*",
                   }}
+                  error={
+                    newOrderData.formData.phone.length > 0 &&
+                    newOrderData.formData.phone.length < 11
+                  }
+                  helperText={
+                    newOrderData.formData.phone.length > 0 &&
+                    newOrderData.formData.phone.length < 11 &&
+                    "Phone must be 11 digits"
+                  }
                   margin="normal"
                 />
 

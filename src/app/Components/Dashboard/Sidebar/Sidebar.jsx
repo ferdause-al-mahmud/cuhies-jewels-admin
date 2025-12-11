@@ -28,6 +28,7 @@ import { auth } from "@/app/firebase/firebase.config";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import useRole from "@/app/utils/useRole";
+import { FaDollarSign } from "react-icons/fa";
 
 const Sidebar = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -159,6 +160,16 @@ const Sidebar = () => {
       color: "from-rose-500 to-rose-600",
       bgColor: "bg-rose-500/10",
       borderColor: "border-rose-500/20",
+      adminOnly: true,
+    },
+    {
+      id: "profit",
+      label: "Profit Analysis",
+      icon: FaDollarSign,
+      href: "/dashboard/profit",
+      color: "from-green-500 to-green-600",
+      bgColor: "bg-green-500/10",
+      borderColor: "border-green-500/20",
       adminOnly: true,
     },
   ];

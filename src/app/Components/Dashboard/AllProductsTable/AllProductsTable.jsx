@@ -1,31 +1,43 @@
 "use client";
 import { Pagination } from "@mui/material";
 import Image from "next/image";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation"; // Added useSearchParams, usePathname
 import { AiFillDelete } from "react-icons/ai";
 import Link from "next/link";
-import { confirmAlert } from "react-confirm-alert"; // Import confirmAlert
-import "react-confirm-alert/src/react-confirm-alert.css"; // Import styles
+import { confirmAlert } from "react-confirm-alert";
+import "react-confirm-alert/src/react-confirm-alert.css";
 import toast from "react-hot-toast";
 
 const AllProductsTable = ({ products, totalPages, currentPage, sortBy }) => {
-  const [page, setPage] = useState(currentPage || 1);
-  const [sortOption, setSortOption] = useState(sortBy || "");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname(); // Gets the current path (e.g. /dashboard/all-products)
 
-  // Handle page change and update the URL
+  // Handle page change while keeping existing filters
   const handlePageChange = (event, newPage) => {
-    setPage(newPage);
-    router.push(`/dashboard/all-products?page=${newPage}&sortBy=${sortOption}`);
+    // 1. Create a clone of the current params
+    const params = new URLSearchParams(searchParams);
+
+    // 2. Update only the page parameter
+    params.set("page", newPage);
+
+    // 3. Push the new URL with all params intact
+    router.push(`${pathname}?${params.toString()}`);
   };
 
-  // Handle sort option change
+  // Handle sort option change while keeping existing filters
   const handleSortChange = (event) => {
     const newSortOption = event.target.value;
-    setSortOption(newSortOption);
-    setPage(1);
-    router.push(`/dashboard/all-products?page=1&sortBy=${newSortOption}`);
+
+    // 1. Create a clone of the current params
+    const params = new URLSearchParams(searchParams);
+
+    // 2. Update sort and reset page to 1
+    params.set("sortBy", newSortOption);
+    params.set("page", "1"); // Always reset to page 1 when sorting changes
+
+    // 3. Push new URL
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   // Function to handle delete
@@ -42,7 +54,6 @@ const AllProductsTable = ({ products, totalPages, currentPage, sortBy }) => {
                 method: "DELETE",
               });
               toast.success("Product deleted successfully!");
-              // Optionally, refresh the products list or redirect
               location.reload();
             } catch (error) {
               console.error("Error deleting product:", error);
@@ -60,13 +71,13 @@ const AllProductsTable = ({ products, totalPages, currentPage, sortBy }) => {
 
   return (
     <div>
-      <div className="mb-4">
-        <label htmlFor="sort" className=" text-black font-bold mr-3">
+      {/* <div className="mb-4"> */}
+      {/* <label htmlFor="sort" className=" text-black font-bold mr-3">
           Sort by:
-        </label>
-        <select
+        </label> */}
+      {/* <select
           id="sort"
-          value={sortOption}
+          value={sortBy} // Use the prop directly, no need for local state
           onChange={handleSortChange}
           className="border border-gray-400 bg-[#242833] text-white p-2 rounded"
         >
@@ -76,63 +87,76 @@ const AllProductsTable = ({ products, totalPages, currentPage, sortBy }) => {
           <option value="oldest" className="bg-[#242833] text-white">
             Oldest
           </option>
-        </select>
-      </div>
+        </select> */}
+      {/* </div> */}
 
       <table className="min-w-full bg-white border">
         <thead>
           <tr>
             <th className="px-4 py-2 border">Product ID</th>
             <th className="px-4 py-2 border">Product Image</th>
+            <th className="px-4 py-2 border">Name</th>{" "}
+            {/* Added Name Column helpful for search results */}
             <th className="px-4 py-2 border">Added Date</th>
             <th className="px-4 py-2 border">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {products?.map((product) => (
-            <tr key={product?.id}>
-              <td className="px-4 py-2 border">{product?.id}</td>
-              <td className="px-4 py-2 border">
-                <div className="flex items-center justify-center">
-                  <Image
-                    src={
-                      product?.imageUrl
-                        ? product?.imageUrl[0]
-                        : product?.variants[0]?.images[0]
-                    }
-                    alt={`Product ${product?.id}`}
-                    width={50}
-                    height={50}
-                  />
-                </div>
-              </td>
-              <td className="px-4 py-2 border">
-                {new Date(product?.createdAt).toLocaleDateString("en-GB")}
-              </td>
-              <td className="px-4 py-2 border">
-                <div className="flex justify-center gap-2 items-center">
-                  <Link
-                    href={`/dashboard/edit-product/${product.id}`}
-                    className="btn text-blue-500 cursor-pointer"
-                  >
-                    Edit
-                  </Link>
-                  <div>
-                    <AiFillDelete
-                      onClick={() => handleDeleteProduct(product?.id)}
-                      className="text-red-500 text-2xl cursor-pointer hover:scale-110"
+          {products?.length > 0 ? (
+            products.map((product) => (
+              <tr key={product?.id}>
+                <td className="px-4 py-2 border">{product?.id}</td>
+                <td className="px-4 py-2 border">
+                  <div className="flex items-center justify-center">
+                    <Image
+                      src={
+                        product?.imageUrl
+                          ? product?.imageUrl[0]
+                          : product?.variants?.[0]?.images?.[0] ||
+                            "/placeholder.jpg"
+                      }
+                      alt={`Product ${product?.id}`}
+                      width={50}
+                      height={50}
+                      className="object-cover rounded"
                     />
                   </div>
-                </div>
+                </td>
+                <td className="px-4 py-2 border">{product?.name}</td>
+                <td className="px-4 py-2 border">
+                  {new Date(product?.createdAt).toLocaleDateString("en-GB")}
+                </td>
+                <td className="px-4 py-2 border">
+                  <div className="flex justify-center gap-2 items-center">
+                    <Link
+                      href={`/dashboard/edit-product/${product.id}`}
+                      className="btn text-blue-500 cursor-pointer hover:underline"
+                    >
+                      Edit
+                    </Link>
+                    <div>
+                      <AiFillDelete
+                        onClick={() => handleDeleteProduct(product?.id)}
+                        className="text-red-500 text-2xl cursor-pointer hover:scale-110 transition-transform"
+                      />
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="5" className="text-center py-4">
+                No products found.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
       <div className="flex justify-center items-center mt-6">
         <Pagination
           count={totalPages}
-          page={page}
+          page={Number(currentPage)} // Ensure this is a number
           onChange={handlePageChange}
           shape="rounded"
           color="primary"
