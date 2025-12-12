@@ -6,26 +6,28 @@ import { withBkashAuth } from "../../middleware";
 async function handler(req, bkashToken) {
     const body = await req.json();
     const { paymentID, trxID, amount, sku, reason } = body;
-    console.log("🔹 Refund Debug:", {
+
+    // 1. Force Amount to 2 Decimal Places (String)
+    // "1070" -> "1070.00"
+    const formattedAmount = Number(amount).toFixed(2);
+
+    console.log("🔹 Refund V1.2 Debug:", {
         url: process.env.bkash_refund_transaction_url,
-        appKeyExists: !!process.env.bkash_api_key, // Should be true
-        tokenExists: !!bkashToken, // Should be true
-        payload: { paymentID, trxID, amount }
+        payload: { paymentID, trxID, amount: formattedAmount }
     });
-    // Basic Validation
+
     if (!paymentID || !trxID || !amount) {
         return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
     }
 
     try {
-        // 1. Call bKash Refund API
         const { data } = await axios.post(
             process.env.bkash_refund_transaction_url,
             {
                 paymentID: paymentID,
                 trxID: trxID,
-                refundAmount: String(amount), // Ensure it's a string
-                sku: sku, // Usually your Order ID
+                amount: String(formattedAmount), // ✅ Updated here
+                sku: String(sku),
                 reason: reason || "Customer request",
             },
             {
@@ -38,38 +40,36 @@ async function handler(req, bkashToken) {
             }
         );
 
-        // 2. Handle Success Response
-        if (data && data.refundTransactionStatus === "Completed") {
+        console.log("🔹 bKash Response:", data);
+
+        // 2. Handle Success
+        // bKash V1.2 usually returns 'refundTransactionStatus' as 'Completed'
+        if (data && data.transactionStatus === "Completed") {
             const db = await connectDB();
             const ordersCollection = db.collection('orders');
             const paymentsCollection = db.collection('bkash_payments');
 
-            // A. Update the Order Status
-            // We search by trxID or sku (Order ID)
+            // A. Update Order
             await ordersCollection.updateOne(
                 { trxID: trxID },
                 {
                     $set: {
                         paymentStatus: "Refunded",
-                        status: "refund", // Updates the badge color in your Admin Panel
-                        refundTrxID: data.refundTrxId,
+                        status: "refund",
+                        refundTrxID: data.refundTrxID,
                         refundTime: data.completedTime
-                    },
-                    // Optional: If you want to deduct the revenue from total calculations
-                    // $inc: { total: -Number(amount) } 
+                    }
                 }
             );
 
-            // B. Log the Refund in Payments Collection
-            // You can insert a new record or update the existing one. 
-            // Here we insert a new "Refund" type record for history tracking.
+            // B. Log Refund
             await paymentsCollection.insertOne({
                 type: "REFUND",
-                originalTrxID: data.originalTrxId,
-                refundTrxID: data.refundTrxId,
-                amount: data.refundAmount,
+                originalTrxID: data.originalTrxID || trxID,
+                refundTrxID: data.refundTrxID,
+                amount: data.amount,
                 date: data.completedTime,
-                reason: data.reason,
+                reason: reason,
                 orderID: sku,
                 createdAt: new Date()
             });
@@ -77,7 +77,15 @@ async function handler(req, bkashToken) {
             return NextResponse.json(data, { status: 200 });
         }
 
-        // 3. Handle bKash Logic Errors (e.g. "Already Refunded", "Insufficient Balance")
+        // 3. Handle Explicit API Errors (Like 2006 Invalid Amount)
+        else if (data && data.statusCode && data.statusCode !== "0000") {
+            return NextResponse.json(
+                { error: data.statusMessage || "Refund Failed", code: data.statusCode },
+                { status: 400 }
+            );
+        }
+
+        // 4. Handle Generic Errors
         else if (data && data.errorMessage) {
             return NextResponse.json(
                 { error: data.errorMessage, code: data.errorCode },
@@ -88,7 +96,7 @@ async function handler(req, bkashToken) {
         return NextResponse.json(data, { status: 200 });
 
     } catch (error) {
-        console.error("Refund API Error:", error.response?.data || error.message);
+        console.error("❌ Refund API Error:", error.response?.data || error.message);
         return NextResponse.json(
             { error: error.response?.data?.errorMessage || "Refund failed" },
             { status: 500 }
@@ -96,5 +104,4 @@ async function handler(req, bkashToken) {
     }
 }
 
-// Wrap with your existing Auth Middleware
 export const POST = withBkashAuth(handler);
