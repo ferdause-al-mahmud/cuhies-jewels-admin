@@ -168,7 +168,7 @@ export async function DELETE(request, { params }) {
         }
 
         // If the order was not returned, we need to update inventory
-        if (order.status !== "returned") {
+        if (order.status !== "returned" || order.status !== "payment_failed") {
 
             const quantityUpdates = order.cart?.map((item) => ({
                 productId: item.id,

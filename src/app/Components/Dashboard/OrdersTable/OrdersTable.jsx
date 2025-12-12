@@ -648,7 +648,55 @@ const OrdersTable = ({ loading, orders, totalPages, currentPage }) => {
               toast.error("Failed to enter order in Pathao");
               return;
             }
-          } else {
+          }
+          // ... inside handleSave function
+          else if (updatedStatus === "refund") {
+            // Check if there is a Transaction ID to refund
+            if (orderDetails?.trxID && orderDetails?.paymentID) {
+              const loadingToast = toast.loading("Processing bKash Refund...");
+
+              try {
+                const refundResponse = await fetch(
+                  "/api/bkash/payment/refund",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      paymentID: orderDetails.paymentID,
+                      trxID: orderDetails.trxID,
+                      amount: orderDetails.advancePayment,
+                      sku: orderDetails.orderID,
+                      reason: "Admin marked as refund",
+                    }),
+                  }
+                );
+
+                const refundResult = await refundResponse.json();
+                console.log(refundResult);
+                toast.dismiss(loadingToast);
+
+                if (refundResponse.ok) {
+                  toast.success(`Refund Successful!`);
+                } else {
+                  toast.error(
+                    `Refund Failed: ${refundResult.error || "Unknown error"}`
+                  );
+                }
+              } catch (err) {
+                toast.dismiss(loadingToast);
+                console.error("Refund API Error", err);
+                toast.error("Error connecting to Refund API");
+              }
+            } else {
+              // ⚠️ FIXED LINE BELOW
+              toast("Status updated to Refund, but no bKash TrxID found.", {
+                icon: "⚠️",
+              });
+            }
+          }
+
+          // ... rest of the function
+          else {
             toast.success("Order status updated successfully!");
           }
 
