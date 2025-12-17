@@ -144,62 +144,59 @@ const ProductForm = () => {
   const [uploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState("");
 
-  const createVariantImageUpload = useCallback(
-    (variantIndex) => {
-      return async (acceptedFiles) => {
-        setLoading(true);
-        setImageError("");
+  const uploadImagesToServer = async (files) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
 
-        try {
-          const optimizedFiles = await Promise.all(
-            acceptedFiles.map(async (file) => {
-              try {
-                return await optimizeImage(file);
-              } catch (error) {
-                console.error("Error optimizing image:", error);
-                return file;
-              }
-            })
-          );
+    const response = await axios.post(
+      "https://cuhiesjewels.com.bd/api/upload", // admin API
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
 
-          const uploadedImageDetails = await Promise.all(
-            optimizedFiles.map(async (file) => {
-              const formData = new FormData();
-              formData.append("file", file);
-              formData.append("upload_preset", "CuhiesJewels");
-              formData.append("folder", "CuhiesJewels");
+    return response.data.files; // [{ url, fileName }]
+  };
 
-              const response = await axios.post(
-                `https://api.cloudinary.com/v1_1/dvktrl9as/image/upload`,
-                formData
-              );
-              return {
-                url: response.data.secure_url,
-                public_id: response.data.public_id,
-                fileName: response.data.original_filename,
-              };
-            })
-          );
+  const createVariantImageUpload = useCallback((variantIndex) => {
+    return async (acceptedFiles) => {
+      setLoading(true);
+      setImageError("");
 
-          const urls = uploadedImageDetails.map((image) => image.url);
+      try {
+        // Optional client-side optimization
+        const optimizedFiles = await Promise.all(
+          acceptedFiles.map(async (file) => {
+            try {
+              return await optimizeImage(file);
+            } catch {
+              return file;
+            }
+          })
+        );
 
-          const updatedVariants = [...product.variants];
-          updatedVariants[variantIndex].images = [
-            ...updatedVariants[variantIndex].images,
-            ...urls,
-          ];
+        const uploadedImages = await uploadImagesToServer(acceptedFiles);
+        const urls = uploadedImages.map((img) => img.url);
 
-          setProduct({ ...product, variants: updatedVariants });
-        } catch (error) {
-          setImageError("Image upload failed. Please try again.");
-          console.error("Error uploading image:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-    },
-    [product]
-  ); // Updated dependency to product
+        setProduct((prev) => {
+          const variants = [...prev.variants];
+          variants[variantIndex] = {
+            ...variants[variantIndex],
+            images: [...variants[variantIndex].images, ...urls],
+          };
+          return { ...prev, variants };
+        });
+      } catch (error) {
+        setImageError("Variant image upload failed.");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
