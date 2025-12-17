@@ -31,7 +31,7 @@ export async function POST(req) {
             const buffer = Buffer.from(arrayBuffer);
 
             const id = uuidv4();
-            const fileName = `${id}.png`;
+            const fileName = `${id}.webp`;
             const filePath = path.join(uploadDir, fileName);
 
             const optimizedImage = await sharp(buffer)
