@@ -35,7 +35,7 @@ export async function POST(req) {
             const filePath = path.join(uploadDir, fileName);
 
             const optimizedImage = await sharp(buffer)
-                .png()
+                .webp()
                 .toBuffer();
 
             fs.writeFileSync(filePath, optimizedImage);
