@@ -31,12 +31,12 @@ export async function POST(req) {
             const buffer = Buffer.from(arrayBuffer);
 
             const id = uuidv4();
-            const fileName = `${id}.webp`;
+            const fileName = `${id}.png`;
             const filePath = path.join(uploadDir, fileName);
 
             const optimizedImage = await sharp(buffer)
                 .resize(1600)
-                .webp({ quality: 80 })
+                .png({ quality: 80 })
                 .toBuffer();
 
             fs.writeFileSync(filePath, optimizedImage);
