@@ -35,8 +35,7 @@ export async function POST(req) {
             const filePath = path.join(uploadDir, fileName);
 
             const optimizedImage = await sharp(buffer)
-                .resize(1600)
-                .png({ quality: 80 })
+                .png()
                 .toBuffer();
 
             fs.writeFileSync(filePath, optimizedImage);
