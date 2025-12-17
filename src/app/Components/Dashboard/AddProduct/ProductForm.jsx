@@ -178,7 +178,7 @@ const ProductForm = () => {
           })
         );
 
-        const uploadedImages = await uploadImagesToServer(acceptedFiles);
+        const uploadedImages = await uploadImagesToServer(optimizedFiles);
         const urls = uploadedImages.map((img) => img.url);
 
         setProduct((prev) => {
