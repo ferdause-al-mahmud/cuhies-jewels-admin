@@ -317,7 +317,7 @@ const EditForm = ({ product }) => {
     files.forEach((file) => formData.append("files", file));
 
     const response = await axios.post(
-      "https://admin.cuhiesjewels.com.bd/api/upload", // admin API
+      "https://admin.cuhiesjewels.com.bd/api/upload",
       formData,
       {
         headers: {
