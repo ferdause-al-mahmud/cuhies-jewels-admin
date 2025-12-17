@@ -312,6 +312,23 @@ const EditForm = ({ product }) => {
     setFormData({ ...formData, variants: updatedVariants });
   };
 
+  const uploadImagesToServer = async (files) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+
+    const response = await axios.post(
+      "https://admin.cuhiesjewels.com.bd/api/upload", // admin API
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data.files; // [{ url, fileName }]
+  };
+
   const handleVariantImageUpload = async (variantIndex, e) => {
     const files = e.target.files;
     setLoading(true);
@@ -329,26 +346,13 @@ const EditForm = ({ product }) => {
         })
       );
 
-      const uploadedImageDetails = await Promise.all(
-        optimizedFiles.map(async (file) => {
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("upload_preset", "CuhiesJewels");
-          formData.append("folder", "CuhiesJewels");
-
-          const response = await axios.post(
-            `https://api.cloudinary.com/v1_1/dvktrl9as/image/upload`,
-            formData
-          );
-
-          return response.data.secure_url;
-        })
-      );
+      const uploadedImages = await uploadImagesToServer(optimizedFiles);
+      const urls = uploadedImages.map((img) => img.url);
 
       const updatedVariants = [...formData.variants];
       updatedVariants[variantIndex].images = [
         ...(updatedVariants[variantIndex].images || []),
-        ...uploadedImageDetails,
+        ...urls,
       ];
 
       setFormData({ ...formData, variants: updatedVariants });
