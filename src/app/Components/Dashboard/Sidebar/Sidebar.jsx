@@ -80,7 +80,7 @@ const Sidebar = () => {
       color: "from-orange-500 to-orange-600",
       bgColor: "bg-orange-500/10",
       borderColor: "border-orange-500/20",
-      adminOnly: false,
+      adminOnly: true,
     },
     {
       id: "manual",
