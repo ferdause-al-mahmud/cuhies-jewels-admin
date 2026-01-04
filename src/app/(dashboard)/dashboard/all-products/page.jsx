@@ -3,7 +3,6 @@ import ProductFilters from "@/app/Components/Dashboard/ProductFilters"; // Adjus
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-// Fetch products with search, type, and category params
 const getProducts = async (
   page = 1,
   limit = 10,
@@ -34,13 +33,11 @@ const getProducts = async (
     return products;
   } catch (error) {
     console.error("Error fetching products:", error);
-    // Return default structure on error
     return { products: [], totalPages: 0, currentPage: 1 };
   }
 };
 
 const AllProducts = async ({ searchParams }) => {
-  // Extract params safely
   const page = parseInt(searchParams?.page || "1");
   const sortBy = searchParams?.sortBy || "";
   const search = searchParams?.search || "";

@@ -7,9 +7,9 @@ export function normalizePhoneNumber(phone) {
 
     return phone
         .split('')
-        .map(char => bengaliToEnglishMap[char] || char) // Convert Bengali digits
+        .map(char => bengaliToEnglishMap[char] || char)
         .join('')
-        .replace(/\D/g, ''); // Remove non-digit characters (e.g., hyphens)
+        .replace(/\D/g, '');
 }
 
 export async function POST(request) {

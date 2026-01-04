@@ -884,6 +884,31 @@ const ManualEntryTable = ({
       total: newTotal,
     }));
   };
+
+  const getAvailableStock = (product, variant, selectedSize) => {
+    if (!product || !variant) return 0;
+
+    // Individual size
+    if (product.sizeType === "individual") {
+      const sizeObj = variant.availableSizes?.find(
+        (s) => s.size === selectedSize
+      );
+      return parseInt(sizeObj?.availability) || 0;
+    }
+
+    // Free size
+    if (product.sizeType === "free" && variant.freeSize) {
+      return parseInt(variant.freeSize.availability) || 0;
+    }
+
+    // No size
+    if (product.sizeType === "none" && variant.noSize) {
+      return parseInt(variant.noSize.availability) || 0;
+    }
+
+    return 0;
+  };
+
   const addProductToNewOrder = (product) => {
     const productPrice = product.offerPrice || product.price;
     const defaultVariant = product.variants[0];
@@ -1928,7 +1953,7 @@ const ManualEntryTable = ({
                             )}
                           </TableCell>
 
-                          <TableCell>
+                          <TableCell className="flex flex-col">
                             <Select
                               value={item.variant}
                               onChange={(e) =>
@@ -1945,6 +1970,21 @@ const ManualEntryTable = ({
                                 </MenuItem>
                               ))}
                             </Select>
+                            <div>
+                              {getAvailableStock(
+                                item,
+                                item.variant,
+                                item.selectedSize
+                              ) <= 0 && (
+                                <Typography
+                                  variant="caption"
+                                  color="error"
+                                  fontWeight={600}
+                                >
+                                  variant is out of stock
+                                </Typography>
+                              )}
+                            </div>
                           </TableCell>
 
                           <TableCell>

@@ -12,7 +12,6 @@ const DashboardPage = () => {
   const { role, loading: roleLoading } = useRole(user?.email);
 
   useEffect(() => {
-    // Redirect to the Sales Analytics Page when visiting the dashboard
     if (role === "moderator") {
       router.push("/dashboard/all-orders");
     } else if (role === "admin") {
@@ -24,7 +23,7 @@ const DashboardPage = () => {
     return <Loader />;
   }
 
-  return null; // You can return a loading spinner here if you want
+  return null;
 };
 
 export default DashboardPage;
